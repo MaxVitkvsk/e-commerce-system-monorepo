@@ -1,0 +1,10 @@
+spring:
+  application:
+    name: user-service
+  profiles:
+    active: local
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    change-log: classpath:db/changelog/db.changelog-master.xml
