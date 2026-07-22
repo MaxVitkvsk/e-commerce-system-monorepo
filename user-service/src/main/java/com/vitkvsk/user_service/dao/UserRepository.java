@@ -14,6 +14,6 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
 
     @Modifying
     @Query(value = "UPDATE users SET active = :active WHERE id = :id", nativeQuery = true)
-    void updateActiveStatus(@Param("id") Long Id, @Param("active") boolean active);
+    void updateActiveStatus(@Param("id") Long id, @Param("active") boolean active);
 
 }
