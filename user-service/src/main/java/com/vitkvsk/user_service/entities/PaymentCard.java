@@ -19,8 +19,9 @@ public class PaymentCard extends BaseEntity{
     @SequenceGenerator(name = "card_seq", sequenceName = "payment_card_id_seq", allocationSize = 50)
     private Long Id;
 
-    @Column(nullable = false)
-    private Long user;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false)
+    private User user;
 
     @Column(nullable = false, length = 32, unique = true)
     private String number;
