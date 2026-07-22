@@ -1,4 +1,4 @@
 package com.vitkvsk.user_service.dto;
 
-public record UserCreatDto() {
+public record UserCreateDto() {
 }
