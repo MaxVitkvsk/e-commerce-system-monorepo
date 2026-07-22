@@ -1,4 +1,4 @@
-package com.vitkvsk.user_service.dao;
+package com.vitkvsk.user_service.entities;
 
 import jakarta.persistence.*;
 import lombok.Getter;
@@ -17,7 +17,7 @@ public class PaymentCard extends BaseEntity{
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "card_seq")
     @SequenceGenerator(name = "card_seq", sequenceName = "payment_card_id_seq", allocationSize = 50)
-    private Long Id;
+    private Long id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "user_id", nullable = false)

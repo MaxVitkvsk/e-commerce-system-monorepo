@@ -1,4 +1,4 @@
-package com.vitkvsk.user_service.dao;
+package com.vitkvsk.user_service.entities;
 
 
 import jakarta.persistence.Column;
