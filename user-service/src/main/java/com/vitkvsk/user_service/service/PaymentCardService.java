@@ -8,6 +8,7 @@ import com.vitkvsk.user_service.dto.PaymentCardResponseDto;
 import com.vitkvsk.user_service.dto.PaymentCardUpdateDto;
 import com.vitkvsk.user_service.entities.PaymentCard;
 import com.vitkvsk.user_service.entities.User;
+import com.vitkvsk.user_service.exception.CardLimitExceededException;
 import com.vitkvsk.user_service.mapper.PaymentCardMapper;
 import com.vitkvsk.user_service.specification.CardSpecifications;
 import lombok.RequiredArgsConstructor;
@@ -33,8 +34,7 @@ public class PaymentCardService {
     public PaymentCardResponseDto createCard(PaymentCardCreateDto dto) {
         long cardCount = cardRepository.countByUserId(dto.userId());
         if (cardCount >= User.MAX_CARDS) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
-                    "User cannot have more than " + User.MAX_CARDS + " payment cards");
+            throw new CardLimitExceededException(User.MAX_CARDS);
         }
 
         User user = userRepository.findById(dto.userId())
