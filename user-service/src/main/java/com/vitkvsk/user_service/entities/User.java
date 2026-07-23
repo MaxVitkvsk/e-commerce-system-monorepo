@@ -14,7 +14,6 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @SuperBuilder
 public class User extends BaseEntity{
     public final static int MAX_CARDS = 5;
@@ -37,6 +36,7 @@ public class User extends BaseEntity{
     private String email;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean active = true;
 
     @OneToMany(mappedBy = "user", cascade = CascadeType.ALL, orphanRemoval = true, fetch = FetchType.LAZY)

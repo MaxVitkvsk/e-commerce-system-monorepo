@@ -1,5 +1,6 @@
 package com.vitkvsk.user_service.dto;
 
+import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 
@@ -10,6 +11,6 @@ public record UserResponseDto(
         LocalDate birthDate,
         String email,
         boolean active,
-        OffsetDateTime createdAt,
-        OffsetDateTime updatedAt
+        Instant createdAt,
+        Instant  updatedAt
 ) {}

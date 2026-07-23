@@ -20,8 +20,6 @@ public interface UserMapper {
     @Mapping(target = "cards", ignore = true)
     User toEntity(UserCreateDto dto);
 
-    @Mapping(target = "createdAt", source = "createdAt")
-    @Mapping(target = "updatedAt", source = "updatedAt")
     UserResponseDto toResponseDto(User user);
 
     List<UserResponseDto> toResponseDtoList(List<User> users);

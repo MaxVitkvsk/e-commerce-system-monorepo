@@ -14,10 +14,17 @@ public interface PaymentCardMapper {
     @Mapping(target = "user.id", source = "userId")
     @Mapping(target = "id", ignore = true)
     @Mapping(target = "active", constant = "true")
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
     PaymentCard toEntity(PaymentCardCreateDto dto);
 
     @Mapping(target = "userId", source = "user.id")
     PaymentCardResponseDto toResponseDto(PaymentCard entity);
 
+    @Mapping(target = "id", ignore = true)
+    @Mapping(target = "user", ignore = true)
+    @Mapping(target = "createdAt", ignore = true)
+    @Mapping(target = "updatedAt", ignore = true)
+    @Mapping(target = "number", ignore = true)
     void updateEntityFromDto(PaymentCardUpdateDto dto, @MappingTarget PaymentCard entity);
 }
