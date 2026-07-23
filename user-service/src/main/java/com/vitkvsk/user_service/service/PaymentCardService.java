@@ -12,6 +12,9 @@ import com.vitkvsk.user_service.exception.CardLimitExceededException;
 import com.vitkvsk.user_service.mapper.PaymentCardMapper;
 import com.vitkvsk.user_service.specification.CardSpecifications;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
+import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -29,8 +32,17 @@ public class PaymentCardService {
     private final PaymentCardRepository cardRepository;
     private final UserRepository userRepository;
     private final PaymentCardMapper cardMapper;
+    private final CacheManager cacheManager;
+
+    private void evictUserCache(Long userId) {
+        Cache cache = cacheManager.getCache("usersWithCards");
+        if (cache != null) {
+            cache.evict(userId);
+        }
+    }
 
     @Transactional
+    @CacheEvict(value = "usersWithCards", key = "#dto.userId()")
     public PaymentCardResponseDto createCard(PaymentCardCreateDto dto) {
         long cardCount = cardRepository.countByUserId(dto.userId());
         if (cardCount >= User.MAX_CARDS) {
@@ -83,27 +95,37 @@ public class PaymentCardService {
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
                         "Card not found with id: " + id));
 
+        Long userId = card.getUser().getId();
+
         cardMapper.updateEntityFromDto(dto, card);
 
+        evictUserCache(userId);
         return cardMapper.toResponseDto(card);
     }
 
     @Transactional
     public void updateActiveStatus(Long id, boolean active) {
-        if (!cardRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Card not found with id: " + id);
-        }
+        PaymentCard card = cardRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Card not found with id: " + id));
+
+        Long userId = card.getUser().getId();
 
         cardRepository.updateActiveStatus(active, id);
+
+        evictUserCache(userId);
     }
 
     @Transactional
     public void deleteCard(Long id) {
-        if (!cardRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "Card not found with id: " + id);
-        }
+        PaymentCard card = cardRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
+                        "Card not found with id: " + id));
+
+        Long userId = card.getUser().getId();
+
         cardRepository.deleteById(id);
+
+        evictUserCache(userId);
     }
 }

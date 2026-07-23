@@ -15,6 +15,8 @@ import com.vitkvsk.user_service.mapper.PaymentCardMapper;
 import com.vitkvsk.user_service.mapper.UserMapper;
 import com.vitkvsk.user_service.specification.UserSpecifications;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.annotation.CacheEvict;
+import org.springframework.cache.annotation.Cacheable;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -40,6 +42,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "usersWithCards", key = "#userId")
     public PaymentCardResponseDto addCardToUser(Long userId, PaymentCardCreateDto dto) {
         long cardCount = paymentCardRepository.countByUserId(userId);
         if (cardCount >= User.MAX_CARDS) {
@@ -58,6 +61,7 @@ public class UserService {
     }
 
     @Transactional(readOnly = true)
+    @Cacheable(value = "usersWithCards", key = "#id")
     public UserResponseDto getUserById(Long id) {
         User user = userRepository.findByIdWithCards(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -74,6 +78,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "usersWithCards", key = "#id")
     public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
         User user = userRepository.findById(id)
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
@@ -85,6 +90,7 @@ public class UserService {
     }
 
     @Transactional
+    @CacheEvict(value = "usersWithCards", key = "#id")
     public void changeUserStatus(Long id, boolean active) {
         if (!userRepository.existsById(id)) {
             throw new ResponseStatusException(HttpStatus.NOT_FOUND,
