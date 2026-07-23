@@ -1,9 +1,8 @@
 package com.vitkvsk.user_service.entities;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
+import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
 
@@ -12,6 +11,8 @@ import java.time.LocalDate;
 @Getter
 @Setter
 @NoArgsConstructor
+@AllArgsConstructor
+@SuperBuilder
 public class PaymentCard extends BaseEntity{
 
     @Id
@@ -33,6 +34,7 @@ public class PaymentCard extends BaseEntity{
     private LocalDate expirationDate;
 
     @Column(nullable = false)
+    @Builder.Default
     private boolean active = true;
 
 }
