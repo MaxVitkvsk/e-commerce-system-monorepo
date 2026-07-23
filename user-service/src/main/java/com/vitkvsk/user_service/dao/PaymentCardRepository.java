@@ -12,9 +12,9 @@ import java.util.List;
 public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long>, JpaSpecificationExecutor<PaymentCard> {
     List<PaymentCard> findAllByUserId(Long userId);
 
+    long countByUserId(Long userId);
+
     @Modifying
     @Query(value = "UPDATE payment_cards SET active = :active WHERE id = :id", nativeQuery = true)
     void updateActiveStatus(@Param("active") boolean active, @Param("id") Long id);
-
-
 }
