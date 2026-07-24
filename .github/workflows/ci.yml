@@ -35,7 +35,7 @@ jobs:
           org.sonarsource.scanner.maven:sonar-maven-plugin:sonar
           -Dsonar.host.url=$SONAR_HOST_URL
           -Dsonar.token=$SONAR_TOKEN
-          -Dsonar.organization=maxvitkvsk
+          -Dsonar.organization=MaxVitkvsk
           -Dsonar.projectKey=user-service
 
       - name: Set up Docker Buildx
