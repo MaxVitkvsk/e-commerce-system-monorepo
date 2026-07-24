@@ -16,6 +16,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -44,14 +45,14 @@ class UserServiceTest {
         testUser.setName("John");
         testUser.setSurname("Dod");
         testUser.setEmail("john@example.com");
-        testUser.setBirthDate(LocalDate.of(1990, 1, 1));
+        testUser.setBirthDate(LocalDate.of(1990, Month.APRIL, 1));
         testUser.setActive(true);
     }
 
     @Test
     void createUser_savesAndReturnsDto() {
         UserCreateDto createDto = new UserCreateDto(
-                "John", "Dod", LocalDate.of(1990, 1, 1), "john@example.com");
+                "John", "Dod", LocalDate.of(1990, Month.APRIL, 1), "john@example.com");
         UserResponseDto responseDto = new UserResponseDto(
                 testUser.getId(), testUser.getName(), testUser.getSurname(), testUser.getBirthDate(),
                 testUser.getEmail(), testUser.isActive(), null, null);
@@ -70,7 +71,7 @@ class UserServiceTest {
     @Test
     void updateUser_shouldUpdateUserSuccessfully() {
         UserUpdateDto updateDto = new UserUpdateDto(
-                "Jane", "Dod", LocalDate.of(1990, 1, 1), "jane@example.com");
+                "Jane", "Dod", LocalDate.of(1990, Month.APRIL, 1), "jane@example.com");
 
         when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         doAnswer(invocation -> {
@@ -94,7 +95,7 @@ class UserServiceTest {
         assertEquals("Jane", result.name());
         assertEquals("jane@example.com", result.email());
         verify(userRepository).findById(1L);
-        verify(userMapper).updateEntityFromDto(eq(updateDto), eq(testUser));
+        verify(userMapper).updateEntityFromDto(updateDto, testUser);
     }
 
     @Test

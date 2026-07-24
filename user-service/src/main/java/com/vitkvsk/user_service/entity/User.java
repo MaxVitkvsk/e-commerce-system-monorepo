@@ -16,7 +16,7 @@ import java.util.List;
 @NoArgsConstructor
 @SuperBuilder
 public class User extends BaseEntity{
-    public final static int MAX_CARDS = 5;
+    public static final int MAX_CARDS = 5;
 
     @Id
     @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")

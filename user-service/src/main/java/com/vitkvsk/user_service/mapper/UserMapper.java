@@ -6,8 +6,6 @@ import com.vitkvsk.user_service.dto.user.UserUpdateDto;
 import com.vitkvsk.user_service.entity.User;
 import org.mapstruct.*;
 
-import java.util.List;
-
 @Mapper(componentModel = "spring")
 public interface UserMapper {
 

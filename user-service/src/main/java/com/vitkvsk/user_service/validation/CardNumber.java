@@ -9,6 +9,6 @@ import java.lang.annotation.*;
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @Size(max = 32, message = "must not exceed 32 characters")
-@Pattern(regexp = "^[0-9]+$", message = "must contain only digits")
+@Pattern(regexp = "^\\d+$", message = "must contain only digits")
 public @interface CardNumber {
 }

@@ -1,6 +1,5 @@
 package com.vitkvsk.user_service;
 
-import jakarta.validation.constraints.Size;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;

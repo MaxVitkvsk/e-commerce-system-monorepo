@@ -20,7 +20,7 @@ import java.util.Optional;
 import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
-public class UserRepTest {
+class UserRepTest {
 
     @Autowired
     private UserRepository userRepository;

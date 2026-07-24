@@ -15,12 +15,13 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 @IntegrationTest
-public class PaymentCardRepTest {
+class PaymentCardRepTest {
 
     @Autowired
     private PaymentCardRepository cardRepository;
@@ -36,7 +37,7 @@ public class PaymentCardRepTest {
                 .name(name)
                 .surname(surname)
                 .email(email)
-                .birthDate(LocalDate.of(1995, 1, 1))
+                .birthDate(LocalDate.of(1995, Month.APRIL, 1))
                 .build();
         return userRepository.save(user);
     }

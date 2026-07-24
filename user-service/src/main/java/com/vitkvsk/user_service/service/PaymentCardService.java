@@ -29,6 +29,7 @@ import java.util.List;
 public class PaymentCardService {
 
     private static final String CACHE = "usersWithCards";
+    private static final String CARD_NOT_FOUND = "Card not found with id: ";
 
     private final PaymentCardRepository cardRepository;
     private final UserRepository userRepository;
@@ -48,7 +49,7 @@ public class PaymentCardService {
             throw new CardLimitExceededException(User.MAX_CARDS);
         }
         User user = userRepository.findById(dto.userId())
-                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + dto.userId()));
+                .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND + dto.userId()));
 
         PaymentCard card = cardMapper.toEntity(dto);
         card.setUser(user);
@@ -62,7 +63,7 @@ public class PaymentCardService {
     public PaymentCardResponseDto getCardById(Long id) {
         return cardRepository.findById(id)
                 .map(cardMapper::toResponseDto)
-                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND + id));
     }
 
     @Transactional(readOnly = true)
@@ -82,7 +83,7 @@ public class PaymentCardService {
     @Transactional
     public PaymentCardResponseDto updateCard(Long id, PaymentCardUpdateDto dto) {
         PaymentCard card = cardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND + id));
         Long userId = card.getUser().getId();
 
         cardMapper.updateEntityFromDto(dto, card);
@@ -94,7 +95,7 @@ public class PaymentCardService {
     @Transactional
     public void updateActiveStatus(Long id, boolean active) {
         PaymentCard card = cardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND + id));
         Long userId = card.getUser().getId();
 
         cardRepository.updateActiveStatus(active, id);
@@ -105,7 +106,7 @@ public class PaymentCardService {
     @Transactional
     public void deleteCard(Long id) {
         PaymentCard card = cardRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Card not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException(CARD_NOT_FOUND + id));
         Long userId = card.getUser().getId();
 
         cardRepository.deleteById(id);

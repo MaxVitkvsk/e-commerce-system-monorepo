@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
+import java.time.Month;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -20,7 +21,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @IntegrationTest
-public class UserFlowTest {
+class UserFlowTest {
 
     @Autowired
     private MockMvc mockMvc;
@@ -31,7 +32,7 @@ public class UserFlowTest {
     @Test
     void shouldCreateAndGetUser() throws Exception {
         UserCreateDto createDto = new UserCreateDto(
-                "Max", "Dod", LocalDate.of(1990, 1, 1), "max.dod@test.com"
+                "Max", "Dod", LocalDate.of(1990, Month.APRIL, 1), "max.dod@test.com"
         );
 
         String response = mockMvc.perform(post("/api/users")
@@ -52,7 +53,7 @@ public class UserFlowTest {
     @Test
     void shouldUpdateUser() throws Exception {
         UserCreateDto createDto = new UserCreateDto(
-                "Alice", "Dod", LocalDate.of(1995, 5, 15), "alice.dod@test.com"
+                "Alice", "Dod", LocalDate.of(1995, Month.APRIL, 15), "alice.dod@test.com"
         );
 
         String response = mockMvc.perform(post("/api/users")
@@ -64,7 +65,7 @@ public class UserFlowTest {
         Long userId = objectMapper.readTree(response).get("id").asLong();
 
         UserUpdateDto updateDto = new UserUpdateDto(
-                "Alice", "Smith", LocalDate.of(1995, 5, 15), "alice.smith@test.com"
+                "Alice", "Smith", LocalDate.of(1995, Month.APRIL, 15), "alice.smith@test.com"
         );
 
         mockMvc.perform(put("/api/users/{id}", userId)

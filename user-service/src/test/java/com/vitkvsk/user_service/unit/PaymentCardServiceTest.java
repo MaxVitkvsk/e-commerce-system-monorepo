@@ -19,6 +19,7 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 
 import java.time.LocalDate;
+import java.time.Month;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -54,7 +55,7 @@ class PaymentCardServiceTest {
                 .name("John")
                 .surname("Dod")
                 .email("john@example.com")
-                .birthDate(LocalDate.of(1990, 1, 1))
+                .birthDate(LocalDate.of(1990, Month.APRIL, 1))
                 .active(true)
                 .build();
 
@@ -62,7 +63,7 @@ class PaymentCardServiceTest {
                 .id(1L)
                 .number("1234567890123456")
                 .holder("John Dod")
-                .expirationDate(LocalDate.of(2028, 12, 31))
+                .expirationDate(LocalDate.of(2028, Month.APRIL, 28))
                 .active(true)
                 .user(testUser)
                 .build();
@@ -70,7 +71,7 @@ class PaymentCardServiceTest {
 
     @Test
     void createCard_shouldThrowExceptionWhenCardLimitExceeded() {
-        PaymentCardCreateDto dto = new PaymentCardCreateDto(1L, "1234567890123456", "John Dod", LocalDate.of(2027, 12, 31));
+        PaymentCardCreateDto dto = new PaymentCardCreateDto(1L, "1234567890123456", "John Dod", LocalDate.of(2027, Month.APRIL, 28));
 
         when(cardRepository.countByUserId(1L)).thenReturn((long) User.MAX_CARDS);
 
@@ -81,7 +82,7 @@ class PaymentCardServiceTest {
     @Test
     void updateCard_shouldEvictUserCacheOnSuccess() {
         Long cardId = 1L;
-        PaymentCardUpdateDto dto = new PaymentCardUpdateDto("Jane Dod", LocalDate.of(2027, 12, 31), true);
+        PaymentCardUpdateDto dto = new PaymentCardUpdateDto("Jane Dod", LocalDate.of(2027, Month.APRIL, 28), true);
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
         doAnswer(invocation -> {
@@ -109,9 +110,9 @@ class PaymentCardServiceTest {
 
         assertNotNull(result);
         assertEquals("Jane Dod", result.holder());
-        assertEquals(LocalDate.of(2027, 12, 31), result.expirationDate());
+        assertEquals(LocalDate.of(2027, Month.APRIL, 28), result.expirationDate());
         verify(cache).evict(1L);
-        verify(cardMapper).updateEntityFromDto(eq(dto), eq(testCard));
+        verify(cardMapper).updateEntityFromDto(dto, testCard);
     }
 
     @Test
