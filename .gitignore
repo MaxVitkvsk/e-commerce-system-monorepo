@@ -7,6 +7,9 @@
 # BlueJ files
 *.ctxt
 
+### Local secrets ###
+user-service/.env
+
 ### IntelliJ IDEA ###
 .idea
 *.iws

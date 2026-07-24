@@ -10,6 +10,9 @@ import org.springframework.data.repository.query.Param;
 import java.util.List;
 
 public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long>, JpaSpecificationExecutor<PaymentCard> {
+
+    boolean existsByNumber(String number);
+
     List<PaymentCard> findAllByUserId(Long userId);
 
     long countByUserId(Long userId);

@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
 
+    boolean existsByEmail(String email);
+
     @EntityGraph(attributePaths = {"cards"})
     @Query("SELECT u FROM User u WHERE u.id = :id")
     Optional<User> findByIdWithCards(@Param("id") Long id);

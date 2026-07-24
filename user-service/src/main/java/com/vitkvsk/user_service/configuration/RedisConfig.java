@@ -1,5 +1,6 @@
 package com.vitkvsk.user_service.configuration;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.cache.annotation.EnableCaching;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -16,13 +17,14 @@ import java.time.Duration;
 public class RedisConfig {
 
     @Bean
-    public RedisCacheManager cacheManager(RedisConnectionFactory connectionFactory) {
+    public RedisCacheManager cacheManager(
+            RedisConnectionFactory connectionFactory,
+            @Value("${app.cache.ttl-minutes:10}") long ttlMinutes) {
+
         RedisCacheConfiguration config = RedisCacheConfiguration.defaultCacheConfig()
-                .serializeValuesWith(
-                        RedisSerializationContext.SerializationPair
-                                .fromSerializer(GenericJacksonJsonRedisSerializer.create(builder -> {}))
-                )
-                .entryTtl(Duration.ofMinutes(10));
+                .serializeValuesWith(RedisSerializationContext.SerializationPair
+                        .fromSerializer(GenericJacksonJsonRedisSerializer.create(builder -> {})))
+                .entryTtl(Duration.ofMinutes(ttlMinutes));
 
         return RedisCacheManager.builder(connectionFactory)
                 .cacheDefaults(config)

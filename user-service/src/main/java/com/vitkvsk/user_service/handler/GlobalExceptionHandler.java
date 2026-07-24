@@ -1,6 +1,8 @@
 package com.vitkvsk.user_service.handler;
 
+import com.vitkvsk.user_service.dto.error.ErrorResponse;
 import com.vitkvsk.user_service.exception.CardLimitExceededException;
+import com.vitkvsk.user_service.exception.EntityAlreadyExistsException;
 import com.vitkvsk.user_service.exception.ResourceNotFoundException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -24,6 +26,11 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(CardLimitExceededException.class)
     public ResponseEntity<ErrorResponse> handleCardLimit(CardLimitExceededException ex) {
         return build(HttpStatus.BAD_REQUEST, "Bad Request", ex.getMessage());
+    }
+
+    @ExceptionHandler(EntityAlreadyExistsException.class)
+    public ResponseEntity<ErrorResponse> handleAlreadyExists(EntityAlreadyExistsException ex) {
+        return build(HttpStatus.CONFLICT, "Conflict", ex.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

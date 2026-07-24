@@ -2,6 +2,7 @@ package com.vitkvsk.user_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
@@ -12,6 +13,7 @@ import java.time.LocalDate;
 @Setter
 @NoArgsConstructor
 @SuperBuilder
+@FieldNameConstants
 public class PaymentCard extends BaseEntity{
 
     @Id

@@ -1,6 +1,7 @@
 package com.vitkvsk.user_service.unit;
 
 import com.vitkvsk.user_service.dto.user.UserCreateDto;
+import com.vitkvsk.user_service.exception.EntityAlreadyExistsException;
 import com.vitkvsk.user_service.exception.ResourceNotFoundException;
 import com.vitkvsk.user_service.repository.UserRepository;
 import com.vitkvsk.user_service.dto.user.UserResponseDto;
@@ -21,7 +22,6 @@ import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
@@ -57,6 +57,7 @@ class UserServiceTest {
                 testUser.getId(), testUser.getName(), testUser.getSurname(), testUser.getBirthDate(),
                 testUser.getEmail(), testUser.isActive(), null, null);
 
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(false);
         when(userMapper.toEntity(createDto)).thenReturn(testUser);
         when(userRepository.save(testUser)).thenReturn(testUser);
         when(userMapper.toResponseDto(testUser)).thenReturn(responseDto);
@@ -66,6 +67,16 @@ class UserServiceTest {
         assertEquals("John", result.name());
         assertEquals("john@example.com", result.email());
         verify(userRepository).save(testUser);
+    }
+
+    @Test
+    void createUser_duplicateEmail_throws() {
+        UserCreateDto createDto = new UserCreateDto(
+                "John", "Dod", LocalDate.of(1990, Month.JANUARY, 1), "john@example.com");
+        when(userRepository.existsByEmail("john@example.com")).thenReturn(true);
+
+        assertThrows(EntityAlreadyExistsException.class, () -> userService.createUser(createDto));
+        verify(userRepository, never()).save(any(User.class));
     }
 
     @Test

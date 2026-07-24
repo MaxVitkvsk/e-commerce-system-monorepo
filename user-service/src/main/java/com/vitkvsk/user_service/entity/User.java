@@ -3,6 +3,7 @@ package com.vitkvsk.user_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;
+import lombok.experimental.FieldNameConstants;
 import lombok.experimental.SuperBuilder;
 
 import java.time.LocalDate;
@@ -15,6 +16,7 @@ import java.util.List;
 @Setter
 @NoArgsConstructor
 @SuperBuilder
+@FieldNameConstants
 public class User extends BaseEntity{
     public static final int MAX_CARDS = 5;
 

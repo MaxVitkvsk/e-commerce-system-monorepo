@@ -1,4 +1,4 @@
-package com.vitkvsk.user_service.handler;
+package com.vitkvsk.user_service.dto.error;
 
 
 import java.time.LocalDateTime;
