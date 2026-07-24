@@ -8,7 +8,7 @@
 *.ctxt
 
 ### Local secrets ###
-user-service/.env
+.env
 
 ### IntelliJ IDEA ###
 .idea
