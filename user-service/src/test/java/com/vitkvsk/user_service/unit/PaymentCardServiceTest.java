@@ -1,12 +1,11 @@
 package com.vitkvsk.user_service.unit;
 
-import com.vitkvsk.user_service.dao.PaymentCardRepository;
-import com.vitkvsk.user_service.dao.UserRepository;
-import com.vitkvsk.user_service.dto.PaymentCardCreateDto;
-import com.vitkvsk.user_service.dto.PaymentCardResponseDto;
-import com.vitkvsk.user_service.dto.PaymentCardUpdateDto;
-import com.vitkvsk.user_service.entities.PaymentCard;
-import com.vitkvsk.user_service.entities.User;
+import com.vitkvsk.user_service.repository.PaymentCardRepository;
+import com.vitkvsk.user_service.dto.paymentcard.PaymentCardCreateDto;
+import com.vitkvsk.user_service.dto.paymentcard.PaymentCardResponseDto;
+import com.vitkvsk.user_service.dto.paymentcard.PaymentCardUpdateDto;
+import com.vitkvsk.user_service.entity.PaymentCard;
+import com.vitkvsk.user_service.entity.User;
 import com.vitkvsk.user_service.exception.CardLimitExceededException;
 import com.vitkvsk.user_service.mapper.PaymentCardMapper;
 import com.vitkvsk.user_service.service.PaymentCardService;
@@ -50,26 +49,28 @@ class PaymentCardServiceTest {
 
     @BeforeEach
     void setUp() {
-        testUser = new User();
-        testUser.setId(1L);
-        testUser.setName("John");
-        testUser.setSurname("Doe");
-        testUser.setEmail("john@example.com");
-        testUser.setBirthDate(LocalDate.of(1990, 1, 1));
-        testUser.setActive(true);
+        testUser = User.builder()
+                .id(1L)
+                .name("John")
+                .surname("Dod")
+                .email("john@example.com")
+                .birthDate(LocalDate.of(1990, 1, 1))
+                .active(true)
+                .build();
 
-        testCard = new PaymentCard();
-        testCard.setId(1L);
-        testCard.setNumber("1234567890123456");
-        testCard.setHolder("John Doe");
-        testCard.setExpirationDate(LocalDate.of(2025, 12, 31));
-        testCard.setActive(true);
-        testCard.setUser(testUser);
+        testCard = PaymentCard.builder()
+                .id(1L)
+                .number("1234567890123456")
+                .holder("John Dod")
+                .expirationDate(LocalDate.of(2028, 12, 31))
+                .active(true)
+                .user(testUser)
+                .build();
     }
 
     @Test
     void createCard_shouldThrowExceptionWhenCardLimitExceeded() {
-        PaymentCardCreateDto dto = new PaymentCardCreateDto(1L, "1234567890123456", "John Doe", LocalDate.of(2025, 12, 31));
+        PaymentCardCreateDto dto = new PaymentCardCreateDto(1L, "1234567890123456", "John Dod", LocalDate.of(2027, 12, 31));
 
         when(cardRepository.countByUserId(1L)).thenReturn((long) User.MAX_CARDS);
 
@@ -80,7 +81,7 @@ class PaymentCardServiceTest {
     @Test
     void updateCard_shouldEvictUserCacheOnSuccess() {
         Long cardId = 1L;
-        PaymentCardUpdateDto dto = new PaymentCardUpdateDto("Jane Doe", LocalDate.of(2026, 12, 31), true);
+        PaymentCardUpdateDto dto = new PaymentCardUpdateDto("Jane Dod", LocalDate.of(2027, 12, 31), true);
 
         when(cardRepository.findById(cardId)).thenReturn(Optional.of(testCard));
         doAnswer(invocation -> {
@@ -107,8 +108,8 @@ class PaymentCardServiceTest {
         var result = paymentCardService.updateCard(cardId, dto);
 
         assertNotNull(result);
-        assertEquals("Jane Doe", result.holder());
-        assertEquals(LocalDate.of(2026, 12, 31), result.expirationDate());
+        assertEquals("Jane Dod", result.holder());
+        assertEquals(LocalDate.of(2027, 12, 31), result.expirationDate());
         verify(cache).evict(1L);
         verify(cardMapper).updateEntityFromDto(eq(dto), eq(testCard));
     }

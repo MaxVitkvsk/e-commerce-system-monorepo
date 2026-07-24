@@ -1,15 +1,16 @@
 package com.vitkvsk.user_service.service;
 
-import com.vitkvsk.user_service.dao.PaymentCardRepository;
-import com.vitkvsk.user_service.dao.UserRepository;
+import com.vitkvsk.user_service.exception.ResourceNotFoundException;
+import com.vitkvsk.user_service.repository.PaymentCardRepository;
+import com.vitkvsk.user_service.repository.UserRepository;
 
-import com.vitkvsk.user_service.dto.PaymentCardCreateDto;
-import com.vitkvsk.user_service.dto.PaymentCardResponseDto;
-import com.vitkvsk.user_service.dto.UserCreateDto;
-import com.vitkvsk.user_service.dto.UserResponseDto;
-import com.vitkvsk.user_service.dto.UserUpdateDto;
-import com.vitkvsk.user_service.entities.PaymentCard;
-import com.vitkvsk.user_service.entities.User;
+import com.vitkvsk.user_service.dto.paymentcard.PaymentCardCreateDto;
+import com.vitkvsk.user_service.dto.paymentcard.PaymentCardResponseDto;
+import com.vitkvsk.user_service.dto.user.UserCreateDto;
+import com.vitkvsk.user_service.dto.user.UserResponseDto;
+import com.vitkvsk.user_service.dto.user.UserUpdateDto;
+import com.vitkvsk.user_service.entity.PaymentCard;
+import com.vitkvsk.user_service.entity.User;
 import com.vitkvsk.user_service.exception.CardLimitExceededException;
 import com.vitkvsk.user_service.mapper.PaymentCardMapper;
 import com.vitkvsk.user_service.mapper.UserMapper;
@@ -29,43 +30,22 @@ import org.springframework.web.server.ResponseStatusException;
 @RequiredArgsConstructor
 public class UserService {
 
+    private static final String CACHE = "usersWithCards";
+
     private final UserRepository userRepository;
-    private final PaymentCardRepository paymentCardRepository;
     private final UserMapper userMapper;
-    private final PaymentCardMapper paymentCardMapper;
 
     @Transactional
     public UserResponseDto createUser(UserCreateDto dto) {
-        User user = userMapper.toEntity(dto);
-        User savedUser = userRepository.save(user);
-        return userMapper.toResponseDto(savedUser);
-    }
-
-    @Transactional
-    @CacheEvict(value = "usersWithCards", key = "#userId")
-    public PaymentCardResponseDto addCardToUser(Long userId, PaymentCardCreateDto dto) {
-        long cardCount = paymentCardRepository.countByUserId(userId);
-        if (cardCount >= User.MAX_CARDS) {
-            throw new CardLimitExceededException(User.MAX_CARDS);
-        }
-
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "User not found with id: " + userId));
-
-        PaymentCard card = paymentCardMapper.toEntity(dto);
-        card.setUser(user);
-
-        PaymentCard savedCard = paymentCardRepository.save(card);
-        return paymentCardMapper.toResponseDto(savedCard);
+        User saved = userRepository.save(userMapper.toEntity(dto));
+        return userMapper.toResponseDto(saved);
     }
 
     @Transactional(readOnly = true)
-    @Cacheable(value = "usersWithCards", key = "#id")
+    @Cacheable(value = CACHE, key = "#id")
     public UserResponseDto getUserById(Long id) {
         User user = userRepository.findByIdWithCards(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "User not found with id: " + id));
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         return userMapper.toResponseDto(user);
     }
 
@@ -73,30 +53,33 @@ public class UserService {
     public Page<UserResponseDto> getAllUsers(String name, String surname, Pageable pageable) {
         Specification<User> spec = Specification.where(UserSpecifications.hasName(name))
                 .and(UserSpecifications.hasSurname(surname));
-
         return userRepository.findAll(spec, pageable).map(userMapper::toResponseDto);
     }
 
     @Transactional
-    @CacheEvict(value = "usersWithCards", key = "#id")
+    @CacheEvict(value = CACHE, key = "#id")
     public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND,
-                        "User not found with id: " + id));
-
+                .orElseThrow(() -> new ResourceNotFoundException("User not found with id: " + id));
         userMapper.updateEntityFromDto(dto, user);
-
         return userMapper.toResponseDto(user);
     }
 
     @Transactional
-    @CacheEvict(value = "usersWithCards", key = "#id")
+    @CacheEvict(value = CACHE, key = "#id")
     public void changeUserStatus(Long id, boolean active) {
         if (!userRepository.existsById(id)) {
-            throw new ResponseStatusException(HttpStatus.NOT_FOUND,
-                    "User not found with id: " + id);
+            throw new ResourceNotFoundException("User not found with id: " + id);
         }
-
         userRepository.updateActiveStatus(id, active);
+    }
+
+    @Transactional
+    @CacheEvict(value = CACHE, key = "#id")
+    public void deleteUser(Long id) {
+        if (!userRepository.existsById(id)) {
+            throw new ResourceNotFoundException("User not found with id: " + id);
+        }
+        userRepository.deleteById(id);
     }
 }

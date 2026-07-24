@@ -1,29 +1,30 @@
 package com.vitkvsk.user_service.controller;
 
-import com.vitkvsk.user_service.dto.PaymentCardCreateDto;
-import com.vitkvsk.user_service.dto.PaymentCardResponseDto;
-import com.vitkvsk.user_service.dto.PaymentCardUpdateDto;
+import com.vitkvsk.user_service.dto.paymentcard.PaymentCardCreateDto;
+import com.vitkvsk.user_service.dto.paymentcard.PaymentCardResponseDto;
+import com.vitkvsk.user_service.dto.paymentcard.PaymentCardUpdateDto;
 import com.vitkvsk.user_service.service.PaymentCardService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
-import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
-@Controller
-@RequestMapping("api/cards")
+
+@RestController
+@RequestMapping("/api/cards")
 @RequiredArgsConstructor
 public class PaymentCardController {
+
     private final PaymentCardService paymentCardService;
 
     @PostMapping
-    public ResponseEntity<PaymentCardResponseDto> createCard(@RequestBody PaymentCardCreateDto paymentCardCreateDto){
-        PaymentCardResponseDto createdCard = paymentCardService.createCard(paymentCardCreateDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdCard);
+    public ResponseEntity<PaymentCardResponseDto> createCard(@Valid @RequestBody PaymentCardCreateDto dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(paymentCardService.createCard(dto));
     }
 
     @GetMapping("/{id}")
@@ -45,12 +46,14 @@ public class PaymentCardController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<PaymentCardResponseDto> updateCard(@PathVariable Long id, @RequestBody PaymentCardUpdateDto dto) {
+    public ResponseEntity<PaymentCardResponseDto> updateCard(@PathVariable Long id,
+                                                             @Valid @RequestBody PaymentCardUpdateDto dto) {
         return ResponseEntity.ok(paymentCardService.updateCard(id, dto));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Void> updateActiveStatus(@PathVariable Long id, @RequestParam boolean active) {
+    public ResponseEntity<Void> updateActiveStatus(@PathVariable Long id,
+                                                   @RequestParam boolean active) {
         paymentCardService.updateActiveStatus(id, active);
         return ResponseEntity.noContent().build();
     }

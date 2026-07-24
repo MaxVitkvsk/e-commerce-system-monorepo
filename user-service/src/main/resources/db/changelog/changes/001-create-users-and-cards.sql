@@ -1,6 +1,6 @@
 --liquibase formatted sql
---changeset author:init
 
+--changeset vitkvsk:001-create-users-and-cards
 CREATE SEQUENCE user_id_seq START WITH 1 INCREMENT BY 50;
 CREATE SEQUENCE payment_card_id_seq START WITH 1 INCREMENT BY 50;
 

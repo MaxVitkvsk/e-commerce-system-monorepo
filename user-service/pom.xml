@@ -103,6 +103,7 @@
 
 	<build>
 		<plugins>
+
 			<plugin>
 				<groupId>org.springframework.boot</groupId>
 				<artifactId>spring-boot-maven-plugin</artifactId>
@@ -126,6 +127,11 @@
 							<goal>compile</goal>
 						</goals>
 						<configuration>
+                            <source>21</source>
+                            <target>21</target>
+                            <compilerArgs>
+                                <arg>-parameters</arg>
+                            </compilerArgs>
 							<annotationProcessorPaths>
 								<path>
 									<groupId>org.projectlombok</groupId>

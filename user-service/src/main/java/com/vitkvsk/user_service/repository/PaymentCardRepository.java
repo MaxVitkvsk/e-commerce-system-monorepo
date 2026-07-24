@@ -1,6 +1,6 @@
-package com.vitkvsk.user_service.dao;
+package com.vitkvsk.user_service.repository;
 
-import com.vitkvsk.user_service.entities.PaymentCard;
+import com.vitkvsk.user_service.entity.PaymentCard;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Modifying;
@@ -15,6 +15,7 @@ public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long>,
     long countByUserId(Long userId);
 
     @Modifying
-    @Query(value = "UPDATE payment_cards SET active = :active WHERE id = :id", nativeQuery = true)
+    @Query(value = "UPDATE payment_cards SET active = :active, updated_at = CURRENT_TIMESTAMP WHERE id = :id",
+            nativeQuery = true)
     void updateActiveStatus(@Param("active") boolean active, @Param("id") Long id);
 }

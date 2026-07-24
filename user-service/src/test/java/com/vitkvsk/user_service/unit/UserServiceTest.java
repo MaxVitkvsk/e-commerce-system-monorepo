@@ -1,15 +1,11 @@
 package com.vitkvsk.user_service.unit;
 
-import com.vitkvsk.user_service.dao.PaymentCardRepository;
-import com.vitkvsk.user_service.dao.UserRepository;
-import com.vitkvsk.user_service.dto.PaymentCardCreateDto;
-import com.vitkvsk.user_service.dto.UserCreateDto;
-import com.vitkvsk.user_service.dto.UserResponseDto;
-import com.vitkvsk.user_service.dto.UserUpdateDto;
-import com.vitkvsk.user_service.entities.PaymentCard;
-import com.vitkvsk.user_service.entities.User;
-import com.vitkvsk.user_service.exception.CardLimitExceededException;
-import com.vitkvsk.user_service.mapper.PaymentCardMapper;
+import com.vitkvsk.user_service.dto.user.UserCreateDto;
+import com.vitkvsk.user_service.exception.ResourceNotFoundException;
+import com.vitkvsk.user_service.repository.UserRepository;
+import com.vitkvsk.user_service.dto.user.UserResponseDto;
+import com.vitkvsk.user_service.dto.user.UserUpdateDto;
+import com.vitkvsk.user_service.entity.User;
 import com.vitkvsk.user_service.mapper.UserMapper;
 import com.vitkvsk.user_service.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,8 +14,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.http.HttpStatus;
-import org.springframework.web.server.ResponseStatusException;
 
 import java.time.LocalDate;
 import java.util.Optional;
@@ -36,9 +30,6 @@ class UserServiceTest {
     private UserRepository userRepository;
 
     @Mock
-    private PaymentCardRepository paymentCardRepository;
-
-    @Mock
     private UserMapper userMapper;
 
     @InjectMocks
@@ -51,30 +42,37 @@ class UserServiceTest {
         testUser = new User();
         testUser.setId(1L);
         testUser.setName("John");
-        testUser.setSurname("Doe");
+        testUser.setSurname("Dod");
         testUser.setEmail("john@example.com");
         testUser.setBirthDate(LocalDate.of(1990, 1, 1));
         testUser.setActive(true);
     }
 
     @Test
-    void addCardToUser_shouldThrowExceptionWhenCardLimitExceeded() {
-        Long userId = 1L;
-        PaymentCardCreateDto cardDto = new PaymentCardCreateDto(userId, "1234567890123456", "John Doe", LocalDate.of(2025, 12, 31));
+    void createUser_savesAndReturnsDto() {
+        UserCreateDto createDto = new UserCreateDto(
+                "John", "Dod", LocalDate.of(1990, 1, 1), "john@example.com");
+        UserResponseDto responseDto = new UserResponseDto(
+                testUser.getId(), testUser.getName(), testUser.getSurname(), testUser.getBirthDate(),
+                testUser.getEmail(), testUser.isActive(), null, null);
 
-        when(paymentCardRepository.countByUserId(userId)).thenReturn((long) User.MAX_CARDS);
+        when(userMapper.toEntity(createDto)).thenReturn(testUser);
+        when(userRepository.save(testUser)).thenReturn(testUser);
+        when(userMapper.toResponseDto(testUser)).thenReturn(responseDto);
 
-        assertThrows(CardLimitExceededException.class, () -> userService.addCardToUser(userId, cardDto));
-        verify(paymentCardRepository, never()).save(any(PaymentCard.class));
+        UserResponseDto result = userService.createUser(createDto);
+
+        assertEquals("John", result.name());
+        assertEquals("john@example.com", result.email());
+        verify(userRepository).save(testUser);
     }
 
     @Test
     void updateUser_shouldUpdateUserSuccessfully() {
-        Long userId = 1L;
-        UserUpdateDto updateDto = new UserUpdateDto("Jane", "Doe", LocalDate.of(1990, 1, 1), "jane@example.com");
+        UserUpdateDto updateDto = new UserUpdateDto(
+                "Jane", "Dod", LocalDate.of(1990, 1, 1), "jane@example.com");
 
-        when(userRepository.findById(userId)).thenReturn(Optional.of(testUser));
-
+        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
         doAnswer(invocation -> {
             UserUpdateDto dto = invocation.getArgument(0);
             User user = invocation.getArgument(1);
@@ -84,33 +82,28 @@ class UserServiceTest {
             user.setEmail(dto.email());
             return null;
         }).when(userMapper).updateEntityFromDto(any(UserUpdateDto.class), any(User.class));
-
         when(userMapper.toResponseDto(any(User.class))).thenAnswer(invocation -> {
             User user = invocation.getArgument(0);
             return new UserResponseDto(
                     user.getId(), user.getName(), user.getSurname(), user.getBirthDate(),
-                    user.getEmail(), user.isActive(), user.getCreatedAt(), user.getUpdatedAt()
-            );
+                    user.getEmail(), user.isActive(), user.getCreatedAt(), user.getUpdatedAt());
         });
 
-        var result = userService.updateUser(userId, updateDto);
+        UserResponseDto result = userService.updateUser(1L, updateDto);
 
-        assertNotNull(result);
         assertEquals("Jane", result.name());
         assertEquals("jane@example.com", result.email());
-        verify(userRepository).findById(userId);
+        verify(userRepository).findById(1L);
         verify(userMapper).updateEntityFromDto(eq(updateDto), eq(testUser));
     }
 
     @Test
     void changeUserStatus_shouldThrowExceptionWhenUserNotFound() {
-        Long userId = 999L;
-        when(userRepository.existsById(userId)).thenReturn(false);
+        when(userRepository.existsById(999L)).thenReturn(false);
 
-        ResponseStatusException exception = assertThrows(ResponseStatusException.class,
-                () -> userService.changeUserStatus(userId, false));
+        assertThrows(ResourceNotFoundException.class,
+                () -> userService.changeUserStatus(999L, false));
 
-        assertEquals(HttpStatus.NOT_FOUND, exception.getStatusCode());
         verify(userRepository, never()).updateActiveStatus(anyLong(), anyBoolean());
     }
 }

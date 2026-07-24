@@ -1,4 +1,4 @@
-package com.vitkvsk.user_service.dto;
+package com.vitkvsk.user_service.dto.paymentcard;
 
 import java.time.LocalDate;
 

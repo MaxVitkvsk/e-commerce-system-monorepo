@@ -1,4 +1,4 @@
-package com.vitkvsk.user_service.dto;
+package com.vitkvsk.user_service.handler;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

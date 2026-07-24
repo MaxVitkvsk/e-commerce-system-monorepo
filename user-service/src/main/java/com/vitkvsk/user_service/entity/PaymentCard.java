@@ -1,4 +1,4 @@
-package com.vitkvsk.user_service.entities;
+package com.vitkvsk.user_service.entity;
 
 import jakarta.persistence.*;
 import lombok.*;

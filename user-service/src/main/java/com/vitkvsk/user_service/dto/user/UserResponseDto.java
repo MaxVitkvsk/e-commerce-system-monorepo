@@ -1,8 +1,7 @@
-package com.vitkvsk.user_service.dto;
+package com.vitkvsk.user_service.dto.user;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.OffsetDateTime;
 
 public record UserResponseDto(
         Long id,

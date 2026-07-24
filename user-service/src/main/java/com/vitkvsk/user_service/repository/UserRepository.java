@@ -1,6 +1,6 @@
-package com.vitkvsk.user_service.dao;
+package com.vitkvsk.user_service.repository;
 
-import com.vitkvsk.user_service.entities.User;
+import com.vitkvsk.user_service.entity.User;
 import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
@@ -13,7 +13,8 @@ public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificat
     Optional<User> findByIdWithCards(@Param("id") Long id);
 
     @Modifying
-    @Query(value = "UPDATE users SET active = :active WHERE id = :id", nativeQuery = true)
+    @Query(value = "UPDATE users SET active = :active, updated_at = CURRENT_TIMESTAMP WHERE id = :id",
+            nativeQuery = true)
     void updateActiveStatus(@Param("id") Long id, @Param("active") boolean active);
 
 }

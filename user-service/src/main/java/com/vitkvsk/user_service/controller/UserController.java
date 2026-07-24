@@ -1,8 +1,10 @@
 package com.vitkvsk.user_service.controller;
 
-
-import com.vitkvsk.user_service.dto.*;
+import com.vitkvsk.user_service.dto.user.UserCreateDto;
+import com.vitkvsk.user_service.dto.user.UserResponseDto;
+import com.vitkvsk.user_service.dto.user.UserUpdateDto;
 import com.vitkvsk.user_service.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -18,9 +20,8 @@ public class UserController {
     private final UserService userService;
 
     @PostMapping
-    public ResponseEntity<UserResponseDto> createUser(@RequestBody UserCreateDto userCreateDto) {
-        UserResponseDto createdUser = userService.createUser(userCreateDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdUser);
+    public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody UserCreateDto dto) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(dto));
     }
 
     @GetMapping("/{id}")
@@ -37,21 +38,21 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponseDto> updateUser(@PathVariable Long id, @RequestBody UserUpdateDto userUpdateDto) {
-        return ResponseEntity.ok(userService.updateUser(id, userUpdateDto));
+    public ResponseEntity<UserResponseDto> updateUser(@PathVariable Long id,
+                                                      @Valid @RequestBody UserUpdateDto dto) {
+        return ResponseEntity.ok(userService.updateUser(id, dto));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Void> changeUserStatus(@PathVariable Long id, @RequestParam boolean active) {
+    public ResponseEntity<Void> changeUserStatus(@PathVariable Long id,
+                                                 @RequestParam boolean active) {
         userService.changeUserStatus(id, active);
         return ResponseEntity.noContent().build();
     }
 
-    @PostMapping("/{userId}/cards")
-    public ResponseEntity<PaymentCardResponseDto> addCardToUser(
-            @PathVariable Long userId,
-            @RequestBody PaymentCardCreateDto paymentCardCreateDto) {
-        PaymentCardResponseDto createdCard = userService.addCardToUser(userId, paymentCardCreateDto);
-        return ResponseEntity.status(HttpStatus.CREATED).body(createdCard);
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+        userService.deleteUser(id);
+        return ResponseEntity.noContent().build();
     }
 }

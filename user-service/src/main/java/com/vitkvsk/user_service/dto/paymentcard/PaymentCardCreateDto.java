@@ -1,5 +1,7 @@
-package com.vitkvsk.user_service.dto;
+package com.vitkvsk.user_service.dto.paymentcard;
 
+import com.vitkvsk.user_service.validation.CardHolder;
+import com.vitkvsk.user_service.validation.CardNumber;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
@@ -9,12 +11,11 @@ public record PaymentCardCreateDto(
         Long userId,
 
         @NotBlank(message = "Card number is mandatory")
-        @Size(max = 32, message = "Card number must not exceed 32 characters")
-        @Pattern(regexp = "^[0-9]+$", message = "Card number must contain only digits")
+        @CardNumber
         String number,
 
         @NotBlank(message = "Cardholder name is mandatory")
-        @Size(max = 100, message = "Cardholder name must not exceed 100 characters")
+        @CardHolder
         String holder,
 
         @NotNull(message = "Expiration date is mandatory")

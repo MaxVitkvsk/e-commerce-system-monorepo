@@ -1,21 +1,17 @@
-package com.vitkvsk.user_service.IT;
+package com.vitkvsk.user_service.IT.user;
 
-
-import com.vitkvsk.user_service.TestcontainersConfiguration;
-import com.vitkvsk.user_service.dao.UserRepository;
-import com.vitkvsk.user_service.entities.PaymentCard;
-import com.vitkvsk.user_service.entities.User;
+import com.vitkvsk.user_service.IntegrationTest;
+import com.vitkvsk.user_service.repository.UserRepository;
+import com.vitkvsk.user_service.entity.PaymentCard;
+import com.vitkvsk.user_service.entity.User;
 import com.vitkvsk.user_service.specification.UserSpecifications;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.jpa.domain.Specification;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -23,10 +19,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
-@SpringBootTest
-@Transactional
-@Import(TestcontainersConfiguration.class)
-public class UserRepIT {
+@IntegrationTest
+public class UserRepTest {
 
     @Autowired
     private UserRepository userRepository;
@@ -35,23 +29,28 @@ public class UserRepIT {
     private EntityManager entityManager;
 
     private User createUser(String name, String surname, String email, LocalDate birthDate) {
-        User u = new User();
-        u.setName(name);
-        u.setSurname(surname);
-        u.setEmail(email);
-        u.setBirthDate(birthDate);
-        return u;
+        return User.builder()
+                .name(name)
+                .surname(surname)
+                .email(email)
+                .birthDate(birthDate)
+                .build();
+    }
+
+    private PaymentCard createCard(String number, String holder, User user) {
+        return PaymentCard.builder()
+                .number(number)
+                .holder(holder)
+                .expirationDate(LocalDate.now().plusYears(2))
+                .user(user)
+                .build();
     }
 
     @Test
     void shouldFindUserWithCards() {
         LocalDate birthDate = LocalDate.now().minusYears(30);
         User user = createUser("John", "Dod", "john@test.com", birthDate);
-        PaymentCard card = new PaymentCard();
-        card.setNumber("1111222233334444");
-        card.setHolder("JOHN DOE");
-        card.setExpirationDate(LocalDate.now().plusYears(1));
-        card.setUser(user);
+        PaymentCard card = createCard("1111222233334444", "JOHN DOD", user);
         user.getCards().add(card);
 
         User savedUser = userRepository.save(user);
@@ -69,7 +68,7 @@ public class UserRepIT {
     @Test
     void shouldUpdateActiveStatusNativeSql() {
         LocalDate birthDate = LocalDate.now().minusYears(25);
-        User user = createUser("Alice", "Smith", "alice@test.com", birthDate);
+        User user = createUser("Alice", "Dod", "alice@test.com", birthDate);
         User savedUser = userRepository.save(user);
 
         assertThat(savedUser.isActive()).isTrue();
@@ -89,9 +88,9 @@ public class UserRepIT {
         LocalDate birthDate = LocalDate.now().minusYears(20);
 
         userRepository.saveAll(List.of(
-                createUser("John", "Doe", "john.doe@test.com", birthDate),
+                createUser("John", "Dod", "john.dod@test.com", birthDate),
                 createUser("John", "Smith", "john.smith@test.com", birthDate),
-                createUser("Alice", "Doe", "alice.doe@test.com", birthDate)
+                createUser("Alice", "Dod", "alice.dod@test.com", birthDate)
         ));
 
         entityManager.flush();
@@ -99,23 +98,19 @@ public class UserRepIT {
 
         Specification<User> spec = Specification
                 .where(UserSpecifications.hasName("John"))
-                .and(UserSpecifications.hasSurname("Doe"));
+                .and(UserSpecifications.hasSurname("Dod"));
 
         Page<User> result = userRepository.findAll(spec, PageRequest.of(0, 10));
 
         assertThat(result.getContent()).hasSize(1);
-        assertThat(result.getContent().get(0).getEmail()).isEqualTo("john.doe@test.com");
+        assertThat(result.getContent().get(0).getEmail()).isEqualTo("john.dod@test.com");
     }
 
     @Test
     void shouldCascadeDeleteUserWithCards() {
         LocalDate birthDate = LocalDate.now().minusYears(30);
-        User user = createUser("Mark", "Zucker", "mark@test.com", birthDate);
-        PaymentCard card = new PaymentCard();
-        card.setNumber("9999888877776666");
-        card.setHolder("MARK ZUCKER");
-        card.setExpirationDate(LocalDate.now().plusYears(2));
-        card.setUser(user);
+        User user = createUser("Mark", "Dod", "mark@test.com", birthDate);
+        PaymentCard card = createCard("9999888877776666", "MARK DOD", user);
         user.getCards().add(card);
 
         User savedUser = userRepository.save(user);

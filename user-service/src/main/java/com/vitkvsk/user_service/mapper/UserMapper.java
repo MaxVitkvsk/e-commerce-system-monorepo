@@ -1,12 +1,10 @@
 package com.vitkvsk.user_service.mapper;
 
-import com.vitkvsk.user_service.dto.UserCreateDto;
-import com.vitkvsk.user_service.dto.UserResponseDto;
-import com.vitkvsk.user_service.dto.UserUpdateDto;
-import com.vitkvsk.user_service.entities.User;
-import org.mapstruct.Mapper;
-import org.mapstruct.Mapping;
-import org.mapstruct.MappingTarget;
+import com.vitkvsk.user_service.dto.user.UserCreateDto;
+import com.vitkvsk.user_service.dto.user.UserResponseDto;
+import com.vitkvsk.user_service.dto.user.UserUpdateDto;
+import com.vitkvsk.user_service.entity.User;
+import org.mapstruct.*;
 
 import java.util.List;
 
@@ -22,12 +20,9 @@ public interface UserMapper {
 
     UserResponseDto toResponseDto(User user);
 
-    List<UserResponseDto> toResponseDtoList(List<User> users);
-
-    @Mapping(target = "id", ignore = true)
-    @Mapping(target = "active", ignore = true)
-    @Mapping(target = "createdAt", ignore = true)
-    @Mapping(target = "updatedAt", ignore = true)
-    @Mapping(target = "cards", ignore = true)
+    @BeanMapping(
+            nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE,
+            unmappedTargetPolicy = ReportingPolicy.IGNORE
+    )
     void updateEntityFromDto(UserUpdateDto dto, @MappingTarget User user);
 }

@@ -1,4 +1,4 @@
-package com.vitkvsk.user_service.configurations;
+package com.vitkvsk.user_service.configuration;
 
 
 import org.springframework.context.annotation.Configuration;
