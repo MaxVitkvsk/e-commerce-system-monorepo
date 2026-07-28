@@ -1,15 +1,15 @@
 package com.vitkvsk.user_service.unit;
 
 import com.vitkvsk.user_service.cache.UserCacheEvictor;
-import com.vitkvsk.user_service.exception.EntityAlreadyExistsException;
-import com.vitkvsk.user_service.repository.PaymentCardRepository;
 import com.vitkvsk.user_service.dto.paymentcard.PaymentCardCreateDto;
 import com.vitkvsk.user_service.dto.paymentcard.PaymentCardResponseDto;
 import com.vitkvsk.user_service.dto.paymentcard.PaymentCardUpdateDto;
 import com.vitkvsk.user_service.entity.PaymentCard;
 import com.vitkvsk.user_service.entity.User;
 import com.vitkvsk.user_service.exception.CardLimitExceededException;
+import com.vitkvsk.user_service.exception.EntityAlreadyExistsException;
 import com.vitkvsk.user_service.mapper.PaymentCardMapper;
+import com.vitkvsk.user_service.repository.PaymentCardRepository;
 import com.vitkvsk.user_service.repository.UserRepository;
 import com.vitkvsk.user_service.service.PaymentCardService;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +24,7 @@ import java.time.Month;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Optional;
+import java.util.UUID;
 import java.util.stream.IntStream;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -39,21 +40,23 @@ class PaymentCardServiceTest {
     @Mock private UserCacheEvictor userCacheEvictor;
     @InjectMocks private PaymentCardService paymentCardService;
 
-    private final PaymentCardCreateDto createDto = new PaymentCardCreateDto(
-            1L, "1234567890123456", "JOHN DOD", LocalDate.of(2030, Month.DECEMBER, 31));
-
-    private PaymentCard testCard;
+    private UUID testUserId;
+    private PaymentCardCreateDto createDto;
     private User testUser;
+    private PaymentCard testCard;
 
     @BeforeEach
     void setUp() {
+        testUserId = UUID.randomUUID();
+
         testUser = User.builder()
-                .id(1L)
+                .id(testUserId)
                 .name("John")
                 .surname("Dod")
                 .email("john@example.com")
                 .birthDate(LocalDate.of(1990, Month.APRIL, 1))
                 .active(true)
+                .cards(new ArrayList<>())
                 .build();
 
         testCard = PaymentCard.builder()
@@ -64,25 +67,33 @@ class PaymentCardServiceTest {
                 .active(true)
                 .user(testUser)
                 .build();
+
+        createDto = new PaymentCardCreateDto(
+                testUserId, "1234567890123456", "JOHN DOD", LocalDate.of(2030, Month.DECEMBER, 31)
+        );
     }
 
-    private User userWithCards(int count) {
+    private User userWithCards(int count, UUID userId) {
         List<PaymentCard> cards = new ArrayList<>();
-        IntStream.range(0, count).forEach(i -> cards.add(PaymentCard.builder().id((long) i).build()));
-        return User.builder().id(1L).cards(cards).build();
+        IntStream.range(0, count).forEach(i ->
+                cards.add(PaymentCard.builder().id((long) i).user(testUser).build())
+        );
+        return User.builder().id(userId).cards(cards).build();
     }
 
     @Test
     void createCard_duplicateNumber_throws() {
-        when(userRepository.findByIdWithCards(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findByIdWithCards(testUserId)).thenReturn(Optional.of(testUser));
         when(cardRepository.existsByNumber(createDto.number())).thenReturn(true);
 
         assertThrows(EntityAlreadyExistsException.class, () -> paymentCardService.createCard(createDto));
+        verify(cardRepository, never()).save(any(PaymentCard.class));
     }
 
     @Test
     void createCard_shouldThrowExceptionWhenCardLimitExceeded() {
-        when(userRepository.findByIdWithCards(1L)).thenReturn(Optional.of(userWithCards(User.MAX_CARDS)));
+        when(userRepository.findByIdWithCards(testUserId))
+                .thenReturn(Optional.of(userWithCards(User.MAX_CARDS, testUserId)));
 
         assertThrows(CardLimitExceededException.class, () -> paymentCardService.createCard(createDto));
         verify(cardRepository, never()).save(any(PaymentCard.class));
@@ -118,7 +129,7 @@ class PaymentCardServiceTest {
         assertNotNull(result);
         assertEquals("Jane Dod", result.holder());
         assertEquals(LocalDate.of(2027, Month.APRIL, 28), result.expirationDate());
-        verify(userCacheEvictor).evict(1L);
+        verify(userCacheEvictor).evict(testUserId);
         verify(cardMapper).updateEntityFromDto(dto, testCard);
     }
 
@@ -130,6 +141,6 @@ class PaymentCardServiceTest {
         paymentCardService.deleteCard(cardId);
 
         verify(cardRepository).deleteById(cardId);
-        verify(userCacheEvictor).evict(1L);
+        verify(userCacheEvictor).evict(testUserId);
     }
 }

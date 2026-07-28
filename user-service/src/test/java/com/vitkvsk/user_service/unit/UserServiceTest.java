@@ -1,13 +1,13 @@
 package com.vitkvsk.user_service.unit;
 
 import com.vitkvsk.user_service.dto.user.UserCreateDto;
-import com.vitkvsk.user_service.exception.EntityAlreadyExistsException;
-import com.vitkvsk.user_service.exception.ResourceNotFoundException;
-import com.vitkvsk.user_service.repository.UserRepository;
 import com.vitkvsk.user_service.dto.user.UserResponseDto;
 import com.vitkvsk.user_service.dto.user.UserUpdateDto;
 import com.vitkvsk.user_service.entity.User;
+import com.vitkvsk.user_service.exception.EntityAlreadyExistsException;
+import com.vitkvsk.user_service.exception.ResourceNotFoundException;
 import com.vitkvsk.user_service.mapper.UserMapper;
+import com.vitkvsk.user_service.repository.UserRepository;
 import com.vitkvsk.user_service.service.UserService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -19,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.Optional;
+import java.util.UUID;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,12 +37,14 @@ class UserServiceTest {
     @InjectMocks
     private UserService userService;
 
+    private UUID testUserId;
     private User testUser;
 
     @BeforeEach
     void setUp() {
+        testUserId = UUID.randomUUID();
         testUser = new User();
-        testUser.setId(1L);
+        testUser.setId(testUserId);
         testUser.setName("John");
         testUser.setSurname("Dod");
         testUser.setEmail("john@example.com");
@@ -62,7 +65,7 @@ class UserServiceTest {
         when(userRepository.save(testUser)).thenReturn(testUser);
         when(userMapper.toResponseDto(testUser)).thenReturn(responseDto);
 
-        UserResponseDto result = userService.createUser(createDto);
+        UserResponseDto result = userService.createUser(createDto, testUserId);
 
         assertEquals("John", result.name());
         assertEquals("john@example.com", result.email());
@@ -75,7 +78,7 @@ class UserServiceTest {
                 "John", "Dod", LocalDate.of(1990, Month.JANUARY, 1), "john@example.com");
         when(userRepository.existsByEmail("john@example.com")).thenReturn(true);
 
-        assertThrows(EntityAlreadyExistsException.class, () -> userService.createUser(createDto));
+        assertThrows(EntityAlreadyExistsException.class, () -> userService.createUser(createDto, testUserId));
         verify(userRepository, never()).save(any(User.class));
     }
 
@@ -84,7 +87,7 @@ class UserServiceTest {
         UserUpdateDto updateDto = new UserUpdateDto(
                 "Jane", "Dod", LocalDate.of(1990, Month.APRIL, 1), "jane@example.com");
 
-        when(userRepository.findById(1L)).thenReturn(Optional.of(testUser));
+        when(userRepository.findById(testUserId)).thenReturn(Optional.of(testUser));
         doAnswer(invocation -> {
             UserUpdateDto dto = invocation.getArgument(0);
             User user = invocation.getArgument(1);
@@ -101,21 +104,22 @@ class UserServiceTest {
                     user.getEmail(), user.isActive(), user.getCreatedAt(), user.getUpdatedAt());
         });
 
-        UserResponseDto result = userService.updateUser(1L, updateDto);
+        UserResponseDto result = userService.updateUser(testUserId, updateDto);
 
         assertEquals("Jane", result.name());
         assertEquals("jane@example.com", result.email());
-        verify(userRepository).findById(1L);
+        verify(userRepository).findById(testUserId);
         verify(userMapper).updateEntityFromDto(updateDto, testUser);
     }
 
     @Test
     void changeUserStatus_shouldThrowExceptionWhenUserNotFound() {
-        when(userRepository.existsById(999L)).thenReturn(false);
+        UUID nonExistentId = UUID.randomUUID();
+        when(userRepository.existsById(nonExistentId)).thenReturn(false);
 
         assertThrows(ResourceNotFoundException.class,
-                () -> userService.changeUserStatus(999L, false));
+                () -> userService.changeUserStatus(nonExistentId, false));
 
-        verify(userRepository, never()).updateActiveStatus(anyLong(), anyBoolean());
+        verify(userRepository, never()).updateActiveStatus(any(UUID.class), anyBoolean());
     }
 }

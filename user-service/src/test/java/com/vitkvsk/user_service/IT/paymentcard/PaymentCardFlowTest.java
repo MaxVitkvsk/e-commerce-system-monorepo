@@ -1,10 +1,10 @@
 package com.vitkvsk.user_service.IT.paymentcard;
 
 import com.vitkvsk.user_service.IntegrationTest;
-import com.vitkvsk.user_service.repository.UserRepository;
 import com.vitkvsk.user_service.dto.paymentcard.PaymentCardCreateDto;
 import com.vitkvsk.user_service.dto.paymentcard.PaymentCardUpdateDto;
 import com.vitkvsk.user_service.entity.User;
+import com.vitkvsk.user_service.repository.UserRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -14,6 +14,7 @@ import tools.jackson.databind.ObjectMapper;
 
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -30,17 +31,19 @@ class PaymentCardFlowTest {
     @Autowired
     private UserRepository userRepository;
 
-    private Long userId;
+    private UUID userId;
 
     @BeforeEach
     void setUp() {
+        userId = UUID.randomUUID();
         User user = User.builder()
+                .id(userId)
                 .name("John")
                 .surname("Dod")
                 .email("john@test.com")
                 .birthDate(LocalDate.of(1990, Month.APRIL, 1))
                 .build();
-        userId = userRepository.save(user).getId();
+        userRepository.save(user);
     }
 
     @Test
