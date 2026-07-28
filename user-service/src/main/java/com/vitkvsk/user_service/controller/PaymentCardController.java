@@ -13,6 +13,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
+import java.util.UUID;
 
 
 @RestController
@@ -33,7 +34,7 @@ public class PaymentCardController {
     }
 
     @GetMapping("/user/{userId}")
-    public ResponseEntity<List<PaymentCardResponseDto>> getCardsByUserId(@PathVariable Long userId) {
+    public ResponseEntity<List<PaymentCardResponseDto>> getCardsByUserId(@PathVariable UUID userId) {
         return ResponseEntity.ok(paymentCardService.getCardsByUserId(userId));
     }
 

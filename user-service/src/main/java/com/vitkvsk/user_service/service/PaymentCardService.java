@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -78,7 +79,7 @@ public class PaymentCardService {
     }
 
     @Transactional(readOnly = true)
-    public List<PaymentCardResponseDto> getCardsByUserId(Long userId) {
+    public List<PaymentCardResponseDto> getCardsByUserId(UUID userId) {
         log.debug("Fetching cards for userId={}", userId);
         return cardRepository.findAllByUserId(userId).stream()
                 .map(cardMapper::toResponseDto)
@@ -102,7 +103,7 @@ public class PaymentCardService {
                     log.debug("Card not found for update: id={}", id);
                     return new ResourceNotFoundException(CARD_NOT_FOUND + id);
                 });
-        Long userId = card.getUser().getId();
+        UUID userId = card.getUser().getId();
 
         cardMapper.updateEntityFromDto(dto, card);
 
@@ -118,7 +119,7 @@ public class PaymentCardService {
                     log.debug("Card not found for status change: id={}", id);
                     return new ResourceNotFoundException(CARD_NOT_FOUND + id);
                 });
-        Long userId = card.getUser().getId();
+        UUID userId = card.getUser().getId();
 
         cardRepository.updateActiveStatus(active, id);
 
@@ -133,7 +134,7 @@ public class PaymentCardService {
                     log.debug("Card not found for delete: id={}", id);
                     return new ResourceNotFoundException(CARD_NOT_FOUND + id);
                 });
-        Long userId = card.getUser().getId();
+        UUID userId = card.getUser().getId();
 
         cardRepository.deleteById(id);
         log.info("Card deleted: id={}, userId={}", id, userId);

@@ -5,10 +5,11 @@ import com.vitkvsk.user_service.validation.CardNumber;
 import jakarta.validation.constraints.*;
 
 import java.time.LocalDate;
+import java.util.UUID;
 
 public record PaymentCardCreateDto(
         @NotNull(message = "User ID is mandatory")
-        Long userId,
+        UUID userId,
 
         @NotBlank(message = "Card number is mandatory")
         @CardNumber
