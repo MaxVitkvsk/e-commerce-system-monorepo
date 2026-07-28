@@ -8,14 +8,15 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
 import java.util.List;
+import java.util.UUID;
 
 public interface PaymentCardRepository extends JpaRepository<PaymentCard, Long>, JpaSpecificationExecutor<PaymentCard> {
 
     boolean existsByNumber(String number);
 
-    List<PaymentCard> findAllByUserId(Long userId);
+    List<PaymentCard> findAllByUserId(UUID userId);
 
-    long countByUserId(Long userId);
+    long countByUserId(UUID userId);
 
     @Modifying
     @Query(value = "UPDATE payment_cards SET active = :active, updated_at = CURRENT_TIMESTAMP WHERE id = :id",

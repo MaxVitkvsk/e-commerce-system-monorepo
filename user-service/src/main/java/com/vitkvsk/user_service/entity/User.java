@@ -9,6 +9,7 @@ import lombok.experimental.SuperBuilder;
 import java.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.UUID;
 
 @Entity
 @Table(name = "users")
@@ -21,9 +22,7 @@ public class User extends BaseEntity{
     public static final int MAX_CARDS = 5;
 
     @Id
-    @GeneratedValue(strategy = GenerationType.SEQUENCE, generator = "user_seq")
-    @SequenceGenerator(name = "user_seq", sequenceName = "user_id_seq", allocationSize = 50)
-    private Long id;
+    private UUID id;
 
     @Column(nullable = false, length = 50)
     private String name;

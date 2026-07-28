@@ -5,18 +5,19 @@ import org.springframework.data.jpa.repository.*;
 import org.springframework.data.repository.query.Param;
 
 import java.util.Optional;
+import java.util.UUID;
 
-public interface UserRepository extends JpaRepository<User, Long>, JpaSpecificationExecutor<User> {
+public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificationExecutor<User> {
 
     boolean existsByEmail(String email);
 
     @EntityGraph(attributePaths = {"cards"})
     @Query("SELECT u FROM User u WHERE u.id = :id")
-    Optional<User> findByIdWithCards(@Param("id") Long id);
+    Optional<User> findByIdWithCards(@Param("id") UUID id);
 
     @Modifying
     @Query(value = "UPDATE users SET active = :active, updated_at = CURRENT_TIMESTAMP WHERE id = :id",
             nativeQuery = true)
-    void updateActiveStatus(@Param("id") Long id, @Param("active") boolean active);
+    void updateActiveStatus(@Param("id") UUID id, @Param("active") boolean active);
 
 }

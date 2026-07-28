@@ -1,24 +1,23 @@
 package com.vitkvsk.user_service.IT.user;
 
-
 import com.vitkvsk.user_service.IntegrationTest;
-import com.vitkvsk.user_service.dto.user.UserCreateDto;
 import com.vitkvsk.user_service.dto.user.UserUpdateDto;
+import com.vitkvsk.user_service.entity.User;
+import com.vitkvsk.user_service.repository.UserRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import tools.jackson.databind.ObjectMapper;
 
+
 import java.time.LocalDate;
 import java.time.Month;
+import java.util.UUID;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @IntegrationTest
 class UserFlowTest {
@@ -29,56 +28,69 @@ class UserFlowTest {
     @Autowired
     private ObjectMapper objectMapper;
 
+    @Autowired
+    private UserRepository userRepository;
+
+    private UUID testUserId;
+
+    @BeforeEach
+    void setUp() {
+        testUserId = UUID.randomUUID();
+        User user = User.builder()
+                .id(testUserId)
+                .name("John")
+                .surname("Dod")
+                .email("john@test.com")
+                .birthDate(LocalDate.of(1990, Month.APRIL, 1))
+                .active(true)
+                .build();
+        userRepository.save(user);
+    }
+
     @Test
-    void shouldCreateAndGetUser() throws Exception {
-        UserCreateDto createDto = new UserCreateDto(
-                "Max", "Dod", LocalDate.of(1990, Month.APRIL, 1), "max.dod@test.com"
-        );
-
-        String response = mockMvc.perform(post("/api/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDto)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.name").value("Max"))
-                .andReturn().getResponse().getContentAsString();
-
-        Long userId = objectMapper.readTree(response).get("id").asLong();
-
-        mockMvc.perform(get("/api/users/{id}", userId))
+    void shouldGetUserById() throws Exception {
+        mockMvc.perform(get("/api/users/{id}", testUserId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.id").value(userId))
-                .andExpect(jsonPath("$.email").value("max.dod@test.com"));
+                .andExpect(jsonPath("$.id").value(testUserId.toString()))
+                .andExpect(jsonPath("$.name").value("John"))
+                .andExpect(jsonPath("$.email").value("john@test.com"));
     }
 
     @Test
     void shouldUpdateUser() throws Exception {
-        UserCreateDto createDto = new UserCreateDto(
-                "Alice", "Dod", LocalDate.of(1995, Month.APRIL, 15), "alice.dod@test.com"
-        );
-
-        String response = mockMvc.perform(post("/api/users")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(createDto)))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-
-        Long userId = objectMapper.readTree(response).get("id").asLong();
-
         UserUpdateDto updateDto = new UserUpdateDto(
-                "Alice", "Smith", LocalDate.of(1995, Month.APRIL, 15), "alice.smith@test.com"
+                "John", "Smith", LocalDate.of(1990, Month.APRIL, 1), "john.smith@test.com"
         );
 
-        mockMvc.perform(put("/api/users/{id}", userId)
+        mockMvc.perform(put("/api/users/{id}", testUserId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.surname").value("Smith"))
-                .andExpect(jsonPath("$.email").value("alice.smith@test.com"));
+                .andExpect(jsonPath("$.email").value("john.smith@test.com"));
+    }
+
+    @Test
+    void shouldChangeUserStatus() throws Exception {
+        mockMvc.perform(patch("/api/users/{id}/status", testUserId)
+                        .param("active", "false"))
+                .andExpect(status().isNoContent());
+    }
+
+    @Test
+    void shouldDeleteUser() throws Exception {
+        mockMvc.perform(delete("/api/users/{id}", testUserId))
+                .andExpect(status().isNoContent());
+
+        mockMvc.perform(get("/api/users/{id}", testUserId))
+                .andExpect(status().isNotFound());
     }
 
     @Test
     void shouldReturnNotFoundForNonExistentUser() throws Exception {
-        mockMvc.perform(get("/api/users/{id}", 99999L))
+        UUID fakeId = UUID.randomUUID();
+
+        mockMvc.perform(get("/api/users/{id}", fakeId))
                 .andExpect(status().isNotFound());
     }
 }

@@ -20,6 +20,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -31,7 +33,7 @@ public class UserService {
     private final UserMapper userMapper;
 
     @Transactional
-    public UserResponseDto createUser(UserCreateDto dto) {
+    public UserResponseDto createUser(UserCreateDto dto, UUID keycloakId) {
         log.debug("Creating user: name={}, surname={}", dto.name(), dto.surname());
 
         if (userRepository.existsByEmail(dto.email())) {
@@ -40,13 +42,15 @@ public class UserService {
         }
 
         User saved = userRepository.save(userMapper.toEntity(dto));
+        saved.setId(keycloakId);
+
         log.info("User created: id={}", saved.getId());
         return userMapper.toResponseDto(saved);
     }
 
     @Transactional(readOnly = true)
     @Cacheable(value = UserCacheEvictor.CACHE_NAME, key = "#id")
-    public UserResponseDto getUserById(Long id) {
+    public UserResponseDto getUserById(UUID id) {
         log.debug("Fetching user by id={}", id);
         User user = userRepository.findByIdWithCards(id)
                 .orElseThrow(() -> {
@@ -66,7 +70,7 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = UserCacheEvictor.CACHE_NAME, key = "#id")
-    public UserResponseDto updateUser(Long id, UserUpdateDto dto) {
+    public UserResponseDto updateUser(UUID id, UserUpdateDto dto) {
         log.info("Updating user: id={}", id);
         User user = userRepository.findById(id)
                 .orElseThrow(() -> {
@@ -79,7 +83,7 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = UserCacheEvictor.CACHE_NAME, key = "#id")
-    public void changeUserStatus(Long id, boolean active) {
+    public void changeUserStatus(UUID id, boolean active) {
         log.info("Changing user status: id={}, active={}", id, active);
         if (!userRepository.existsById(id)) {
             log.debug("User not found for status change: id={}", id);
@@ -90,7 +94,7 @@ public class UserService {
 
     @Transactional
     @CacheEvict(value = UserCacheEvictor.CACHE_NAME, key = "#id")
-    public void deleteUser(Long id) {
+    public void deleteUser(UUID id) {
         log.info("Deleting user: id={}", id);
         if (!userRepository.existsById(id)) {
             log.debug("User not found for delete: id={}", id);

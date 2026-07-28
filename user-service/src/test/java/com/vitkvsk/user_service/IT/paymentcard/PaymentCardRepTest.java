@@ -1,10 +1,10 @@
 package com.vitkvsk.user_service.IT.paymentcard;
 
 import com.vitkvsk.user_service.IntegrationTest;
-import com.vitkvsk.user_service.repository.PaymentCardRepository;
-import com.vitkvsk.user_service.repository.UserRepository;
 import com.vitkvsk.user_service.entity.PaymentCard;
 import com.vitkvsk.user_service.entity.User;
+import com.vitkvsk.user_service.repository.PaymentCardRepository;
+import com.vitkvsk.user_service.repository.UserRepository;
 import com.vitkvsk.user_service.specification.CardSpecifications;
 import jakarta.persistence.EntityManager;
 import jakarta.persistence.PersistenceContext;
@@ -17,6 +17,7 @@ import org.springframework.data.jpa.domain.Specification;
 import java.time.LocalDate;
 import java.time.Month;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -34,6 +35,7 @@ class PaymentCardRepTest {
 
     private User createUser(String name, String surname, String email) {
         User user = User.builder()
+                .id(UUID.randomUUID())
                 .name(name)
                 .surname(surname)
                 .email(email)

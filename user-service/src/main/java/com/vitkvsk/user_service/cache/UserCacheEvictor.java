@@ -6,6 +6,8 @@ import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Component;
 
+import java.util.UUID;
+
 @Slf4j
 @Component
 @RequiredArgsConstructor
@@ -15,7 +17,7 @@ public class UserCacheEvictor {
 
     private final CacheManager cacheManager;
 
-    public void evict(Long userId) {
+    public void evict(UUID userId) {
         Cache cache = cacheManager.getCache(CACHE_NAME);
         if (cache != null) {
             cache.evict(userId);

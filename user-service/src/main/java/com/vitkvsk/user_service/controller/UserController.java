@@ -12,6 +12,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
 @RestController
 @RequestMapping("/api/users")
 @RequiredArgsConstructor
@@ -19,13 +21,13 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping
-    public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody UserCreateDto dto) {
-        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(dto));
-    }
+    // @PostMapping
+    // public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody UserCreateDto dto) {
+    //    return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(dto));
+    // }
 
     @GetMapping("/{id}")
-    public ResponseEntity<UserResponseDto> getUserById(@PathVariable Long id) {
+    public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID id) {
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
@@ -38,20 +40,20 @@ public class UserController {
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponseDto> updateUser(@PathVariable Long id,
+    public ResponseEntity<UserResponseDto> updateUser(@PathVariable UUID id,
                                                       @Valid @RequestBody UserUpdateDto dto) {
         return ResponseEntity.ok(userService.updateUser(id, dto));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Void> changeUserStatus(@PathVariable Long id,
+    public ResponseEntity<Void> changeUserStatus(@PathVariable UUID id,
                                                  @RequestParam boolean active) {
         userService.changeUserStatus(id, active);
         return ResponseEntity.noContent().build();
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
+    public ResponseEntity<Void> deleteUser(@PathVariable UUID id) {
         userService.deleteUser(id);
         return ResponseEntity.noContent().build();
     }
