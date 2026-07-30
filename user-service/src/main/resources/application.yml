@@ -1,4 +1,11 @@
 spring:
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          issuer-uri: ${KEYCLOAK_ISSUER_URI:http://localhost:8180/realms/microservices-realm}
+  app:
+    internal-secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
   application:
     name: user-service
   profiles:
@@ -23,6 +30,7 @@ spring:
 app:
   cache:
     ttl-minutes: 10
+  internal-secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
 
 server:
   port: 8080
