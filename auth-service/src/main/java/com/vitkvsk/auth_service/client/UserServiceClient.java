@@ -24,7 +24,7 @@ public class UserServiceClient {
 
     @Value("${app.user-service-url}") private String userServiceUrl;
     @Value("${app.internal-secret}")  private String internalSecret;
-    
+
     @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
             maxRetries = 2, delay = 500, multiplier = 2.0, jitter = 250)
     public void createProfile(String keycloakId, RegisterRequest req) {
