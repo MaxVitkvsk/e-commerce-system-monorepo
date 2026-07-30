@@ -6,7 +6,6 @@ import org.springframework.boot.context.properties.ConfigurationPropertiesScan;
 import org.springframework.resilience.annotation.EnableResilientMethods;
 
 @SpringBootApplication
-@EnableResilientMethods
 @ConfigurationPropertiesScan
 public class AuthServiceApplication {
 
