@@ -1,6 +1,7 @@
-package com.vitkvsk.auth_service.exception;
+package com.vitkvsk.auth_service.handler;
 
 import com.vitkvsk.auth_service.dto.ErrorResponse;
+import com.vitkvsk.auth_service.exception.AuthException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;

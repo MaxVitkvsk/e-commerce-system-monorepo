@@ -5,9 +5,11 @@ import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.KeycloakBuilder;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.resilience.annotation.EnableResilientMethods;
 import org.springframework.web.client.RestTemplate;
 
 @Configuration
+@EnableResilientMethods
 public class BeanConfig {
 
     @Bean
