@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import java.time.LocalDateTime;
 
 @RestControllerAdvice
-@Order(Ordered.HIGHEST_PRECEDENCE) 
+@Order(Ordered.HIGHEST_PRECEDENCE)
 public class SecurityExceptionHandler {
 
     @ExceptionHandler(AccessDeniedException.class)

@@ -8,6 +8,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.ResourceAccessException;
 
 @Slf4j
 @RestControllerAdvice
@@ -19,10 +21,11 @@ public class GlobalExceptionHandler {
                 .body(new ErrorResponse(e.getStatus().value(), e.getStatus().name(), e.getMessage()));
     }
 
-    @ExceptionHandler(SecurityException.class)
-    public ResponseEntity<ErrorResponse> handleSecurity(SecurityException e) {
-        return ResponseEntity.status(HttpStatus.FORBIDDEN)
-                .body(new ErrorResponse(403, "FORBIDDEN", e.getMessage()));
+    @ExceptionHandler({HttpServerErrorException.class, ResourceAccessException.class})
+    public ResponseEntity<ErrorResponse> handleUpstream(Exception e) {
+        log.error("Upstream call failed after retries", e);
+        return ResponseEntity.status(HttpStatus.BAD_GATEWAY)
+                .body(new ErrorResponse(502, "UPSTREAM_ERROR", "Upstream service unavailable"));
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)

@@ -3,15 +3,26 @@ server:
 spring:
   application: {name: auth-service}
 
+http:
+  client:
+    connect-timeout: ${HTTP_CONNECT_TIMEOUT:3s}
+    read-timeout: ${HTTP_READ_TIMEOUT:5s}
+
 keycloak:
   url: ${KEYCLOAK_URL:http://localhost:8180}
   realm: ${KEYCLOAK_REALM:microservices-realm}
   client-id: ${KEYCLOAK_CLIENT_ID:app-client}
   client-secret: ${KEYCLOAK_CLIENT_SECRET:}
+  admin-realm: ${KEYCLOAK_ADMIN_REALM:master}
+  admin-client-id: ${KEYCLOAK_ADMIN_CLIENT_ID:admin-cli}
   admin-user: ${KEYCLOAK_ADMIN_USER:kcadmin}
   admin-password: ${KEYCLOAK_ADMIN_PASSWORD:kcadmin-pass}
   app-admin-username: ${APP_ADMIN_USERNAME:admin}
   app-admin-password: ${APP_ADMIN_PASSWORD:admin123}
+
+app:
+  user-service-url: ${USER_SERVICE_URL:http://localhost:8080}
+  internal-secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
 
 management:
   endpoints.web.exposure.include: health,info

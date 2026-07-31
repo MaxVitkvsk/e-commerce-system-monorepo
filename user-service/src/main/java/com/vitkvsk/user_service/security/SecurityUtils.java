@@ -12,7 +12,7 @@ public class SecurityUtils {
     public UUID currentUserId() {
         Authentication a = SecurityContextHolder.getContext().getAuthentication();
         if (a == null || a.getName() == null) throw new AccessDeniedException("not authenticated");
-        return UUID.fromString(a.getName()); // name == JWT sub == user.id
+        return UUID.fromString(a.getName());
     }
     public boolean isAdmin() {
         Authentication a = SecurityContextHolder.getContext().getAuthentication();

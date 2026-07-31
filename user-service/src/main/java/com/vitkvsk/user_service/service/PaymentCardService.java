@@ -38,17 +38,17 @@ public class PaymentCardService {
     private final UserCacheEvictor userCacheEvictor;
 
     @Transactional
-    public PaymentCardResponseDto createCard(PaymentCardCreateDto dto) {
-        log.debug("Creating card for userId={}", dto.userId());
+    public PaymentCardResponseDto createCard(PaymentCardCreateDto dto, UUID ownerId) {
+        log.debug("Creating card for ownerId={}", ownerId);
 
-        User user = userRepository.findByIdWithCards(dto.userId())
+        User user = userRepository.findByIdWithCards(ownerId)
                 .orElseThrow(() -> {
-                    log.debug("User not found for card creation: userId={}", dto.userId());
-                    return new ResourceNotFoundException(USER_NOT_FOUND + dto.userId());
+                    log.debug("User not found for card creation: ownerId={}", ownerId);
+                    return new ResourceNotFoundException(USER_NOT_FOUND + ownerId);
                 });
 
         if (user.getCards().size() >= User.MAX_CARDS) {
-            log.warn("Card limit exceeded: userId={}, limit={}", dto.userId(), User.MAX_CARDS);
+            log.warn("Card limit exceeded: ownerId={}, limit={}", ownerId, User.MAX_CARDS);
             throw new CardLimitExceededException(User.MAX_CARDS);
         }
 
@@ -62,8 +62,8 @@ public class PaymentCardService {
         user.getCards().add(card);
 
         PaymentCard saved = cardRepository.save(card);
-        log.info("Card created: id={}, userId={}", saved.getId(), dto.userId());
-        userCacheEvictor.evict(dto.userId());
+        log.info("Card created: id={}, ownerId={}", saved.getId(), ownerId);
+        userCacheEvictor.evict(ownerId);
         return cardMapper.toResponseDto(saved);
     }
 

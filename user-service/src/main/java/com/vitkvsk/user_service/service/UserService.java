@@ -36,13 +36,19 @@ public class UserService {
     public UserResponseDto createUser(UserCreateDto dto, UUID keycloakId) {
         log.debug("Creating user: name={}, surname={}", dto.name(), dto.surname());
 
+        if (userRepository.existsById(keycloakId)) {
+            log.debug("User already exists (idempotent create): id={}", keycloakId);
+            return userMapper.toResponseDto(userRepository.findById(keycloakId).orElseThrow());
+        }
+
         if (userRepository.existsByEmail(dto.email())) {
             log.warn("Rejected user creation: email already exists");
             throw new EntityAlreadyExistsException("User with email '" + dto.email() + "' already exists");
         }
 
-        User saved = userRepository.save(userMapper.toEntity(dto));
-        saved.setId(keycloakId);
+        User user = userMapper.toEntity(dto);
+        user.setId(keycloakId);
+        User saved = userRepository.save(user);
 
         log.info("User created: id={}", saved.getId());
         return userMapper.toResponseDto(saved);

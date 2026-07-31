@@ -1,5 +1,6 @@
 package com.vitkvsk.auth_service.client;
 
+import com.vitkvsk.auth_service.config.RetryConfig;
 import com.vitkvsk.auth_service.dto.RegisterRequest;
 import com.vitkvsk.auth_service.exception.AuthException;
 import lombok.RequiredArgsConstructor;
@@ -20,20 +21,28 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class UserServiceClient {
 
+    private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Service-Token";
+
     private final RestTemplate rest;
 
     @Value("${app.user-service-url}") private String userServiceUrl;
     @Value("${app.internal-secret}")  private String internalSecret;
 
     @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
-            maxRetries = 2, delay = 500, multiplier = 2.0, jitter = 250)
+            maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
+            multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
     public void createProfile(String keycloakId, RegisterRequest req) {
         HttpHeaders h = new HttpHeaders();
         h.setContentType(MediaType.APPLICATION_JSON);
-        h.set("X-Internal-Service-Token", internalSecret);
-        Map<String, Object> body = Map.of(
-                "id", keycloakId, "username", req.username(), "email", req.email(),
-                "firstName", req.firstName(), "lastName", req.lastName(), "active", true);
+        h.set(INTERNAL_TOKEN_HEADER, internalSecret);
+
+        Map<String, Object> profile = Map.of(
+                "name", req.name(),
+                "surname", req.surname(),
+                "birthDate", req.birthDate().toString(),
+                "email", req.email());
+        Map<String, Object> body = Map.of("id", keycloakId, "user", profile);
+
         try {
             rest.postForEntity(userServiceUrl + "/api/users/internal", new HttpEntity<>(body, h), Void.class);
         } catch (HttpClientErrorException e) {

@@ -21,6 +21,6 @@ public class RealmRoleJwtConverter implements Converter<Jwt, AbstractAuthenticat
         Map<String, Object> realm = jwt.getClaimAsMap("realm_access");
         if (realm != null && realm.get("roles") instanceof List<?> roles)
             for (Object r : roles) auths.add(new SimpleGrantedAuthority("ROLE_" + r.toString().toUpperCase()));
-        return new JwtAuthenticationToken(jwt, auths, jwt.getSubject()); // subject = userId
+        return new JwtAuthenticationToken(jwt, auths, jwt.getSubject());
     }
 }

@@ -1,8 +1,9 @@
 package com.vitkvsk.user_service.controller;
 
-import com.vitkvsk.user_service.dto.user.UserCreateDto;
+import com.vitkvsk.user_service.dto.user.InternalUserCreateRequest;
 import com.vitkvsk.user_service.dto.user.UserResponseDto;
 import com.vitkvsk.user_service.dto.user.UserUpdateDto;
+import com.vitkvsk.user_service.security.SecurityUtils;
 import com.vitkvsk.user_service.service.UserService;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -20,34 +21,34 @@ import java.util.UUID;
 public class UserController {
 
     private final UserService userService;
+    private final SecurityUtils security;
 
-    // @PostMapping
-    // public ResponseEntity<UserResponseDto> createUser(@Valid @RequestBody UserCreateDto dto) {
-    //    return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(dto));
-    // }
+    @PostMapping("/internal")
+    public ResponseEntity<UserResponseDto> createUserInternal(@Valid @RequestBody InternalUserCreateRequest req) {
+        return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(req.user(), req.id()));
+    }
 
     @GetMapping("/{id}")
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID id) {
+        security.requireOwnerOrAdmin(id);
         return ResponseEntity.ok(userService.getUserById(id));
     }
 
     @GetMapping
     public ResponseEntity<Page<UserResponseDto>> getAllUsers(
             @RequestParam(required = false) String name,
-            @RequestParam(required = false) String surname,
-            Pageable pageable) {
+            @RequestParam(required = false) String surname, Pageable pageable) {
         return ResponseEntity.ok(userService.getAllUsers(name, surname, pageable));
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity<UserResponseDto> updateUser(@PathVariable UUID id,
-                                                      @Valid @RequestBody UserUpdateDto dto) {
+    public ResponseEntity<UserResponseDto> updateUser(@PathVariable UUID id, @Valid @RequestBody UserUpdateDto dto) {
+        security.requireOwnerOrAdmin(id);
         return ResponseEntity.ok(userService.updateUser(id, dto));
     }
 
     @PatchMapping("/{id}/status")
-    public ResponseEntity<Void> changeUserStatus(@PathVariable UUID id,
-                                                 @RequestParam boolean active) {
+    public ResponseEntity<Void> changeUserStatus(@PathVariable UUID id, @RequestParam boolean active) {
         userService.changeUserStatus(id, active);
         return ResponseEntity.noContent().build();
     }

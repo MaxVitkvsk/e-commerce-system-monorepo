@@ -3,6 +3,7 @@ package com.vitkvsk.auth_service.service;
 import com.vitkvsk.auth_service.client.KeycloakTokenClient;
 import com.vitkvsk.auth_service.client.UserServiceClient;
 import com.vitkvsk.auth_service.config.KeycloakProperties;
+import com.vitkvsk.auth_service.config.Roles;
 import com.vitkvsk.auth_service.dto.AuthRequest;
 import com.vitkvsk.auth_service.dto.AuthResponse;
 import com.vitkvsk.auth_service.dto.RefreshRequest;
@@ -43,11 +44,20 @@ public class AuthService {
         try {
             return keycloak.realm(kc.getRealm()).users().get(userId).roles().realmLevel().listAll().stream()
                     .map(RoleRepresentation::getName)
-                    .filter(n -> "admin".equals(n) || "user".equals(n))
+                    .filter(n -> Roles.ADMIN.equals(n) || Roles.USER.equals(n))
                     .findFirst().orElse(null);
         } catch (Exception e) {
+            log.warn("cannot resolve primary role for user {}", userId, e);
             return null;
         }
+    }
+
+    private CredentialRepresentation passwordCredential(String value) {
+        CredentialRepresentation cred = new CredentialRepresentation();
+        cred.setType(CredentialRepresentation.PASSWORD);
+        cred.setValue(value);
+        cred.setTemporary(false);
+        return cred;
     }
 
     public AuthResponse register(RegisterRequest req) {
@@ -58,15 +68,11 @@ public class AuthService {
         UserRepresentation u = new UserRepresentation();
         u.setUsername(req.username());
         u.setEmail(req.email());
-        u.setFirstName(req.firstName());
-        u.setLastName(req.lastName());
+        u.setFirstName(req.name());
+        u.setLastName(req.surname());
         u.setEnabled(true);
         u.setEmailVerified(true);
-        CredentialRepresentation cred = new CredentialRepresentation();
-        cred.setType(CredentialRepresentation.PASSWORD);
-        cred.setValue(req.password());
-        cred.setTemporary(false);
-        u.setCredentials(Collections.singletonList(cred));
+        u.setCredentials(Collections.singletonList(passwordCredential(req.password())));
 
         String keycloakId;
         try (Response resp = realm.users().create(u)) {
@@ -79,13 +85,14 @@ public class AuthService {
         }
 
         realm.users().get(keycloakId).roles().realmLevel()
-                .add(List.of(realm.roles().get("user").toRepresentation()));
+                .add(List.of(realm.roles().get(Roles.USER).toRepresentation()));
 
         try {
             userServiceClient.createProfile(keycloakId, req);
         } catch (Exception e) {
             log.error("profile creation failed after retries, compensating keycloak user {}", keycloakId, e);
-            try { realm.users().get(keycloakId).remove(); } catch (Exception ignored) {}
+            try { realm.users().get(keycloakId).remove(); }
+            catch (Exception ex) { log.error("compensation failed: cannot remove keycloak user {}", keycloakId, ex); }
             throw AuthException.badRequest("Profile creation failed: " + e.getMessage());
         }
         return login(new AuthRequest(req.username(), req.password()));
@@ -107,8 +114,8 @@ public class AuthService {
             String sub = (String) body.get("sub");
             return new ValidateResponse(true, sub, primaryRole(sub), "valid");
         } catch (Exception e) {
-            return new ValidateResponse(false, null, null, "Validation error: " + e.getMessage());
+            log.warn("token validation failed", e);
+            return new ValidateResponse(false, null, null, "Token validation failed");
         }
     }
-
 }

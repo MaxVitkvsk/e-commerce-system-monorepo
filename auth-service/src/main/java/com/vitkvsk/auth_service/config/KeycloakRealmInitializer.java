@@ -6,7 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.*;
-import org.springframework.context.ApplicationEvent;
+import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
 
@@ -20,6 +20,17 @@ public class KeycloakRealmInitializer {
 
     private final Keycloak keycloak;
     private final KeycloakProperties p;
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void init() {
+        ensureRealm();
+        RealmResource realm = keycloak.realm(p.getRealm());
+        ensureRole(realm, Roles.ADMIN);
+        ensureRole(realm, Roles.USER);
+        ensureClient(realm);
+        ensureAdminUser(realm);
+        log.info("Keycloak realm '{}' initialized", p.getRealm());
+    }
 
     private void ensureRealm() {
         try { keycloak.realm(p.getRealm()).toRepresentation(); }
@@ -44,7 +55,24 @@ public class KeycloakRealmInitializer {
     }
 
     private void ensureClient(RealmResource realm) {
-        if (!realm.clients().findByClientId(p.getClientId()).isEmpty()) return;
+        List<ClientRepresentation> found = realm.clients().findByClientId(p.getClientId());
+        if (!found.isEmpty()) {
+            ClientRepresentation existing = found.get(0);
+            boolean changed = false;
+            if (p.getClientSecret() != null && !p.getClientSecret().equals(existing.getSecret())) {
+                existing.setSecret(p.getClientSecret());
+                changed = true;
+            }
+            if (!Boolean.TRUE.equals(existing.isDirectAccessGrantsEnabled())) {
+                existing.setDirectAccessGrantsEnabled(true);
+                changed = true;
+            }
+            if (changed) {
+                realm.clients().get(existing.getId()).update(existing);
+                log.info("Client '{}' secret/grants synchronized", p.getClientId());
+            }
+            return;
+        }
         ClientRepresentation c = new ClientRepresentation();
         c.setClientId(p.getClientId());
         c.setEnabled(true);
@@ -54,38 +82,56 @@ public class KeycloakRealmInitializer {
         c.setStandardFlowEnabled(true);
         c.setServiceAccountsEnabled(true);
         c.setProtocol("openid-connect");
-        c.setRedirectUris(List.of("*"));
+        c.setRedirectUris(List.of("*")); 
         realm.clients().create(c);
     }
 
     private void ensureAdminUser(RealmResource realm) {
         String username = p.getAppAdminUsername();
-        if (!realm.users().search(username, true).isEmpty()) return;
+        List<UserRepresentation> found = realm.users().search(username, true);
+        String id;
+        if (!found.isEmpty()) {
+            id = found.get(0).getId();
+            UserRepresentation existing = realm.users().get(id).toRepresentation();
+            existing.setEnabled(true);
+            existing.setEmailVerified(true);
+            existing.setFirstName("System");
+            existing.setLastName("Administrator");
+            existing.setRequiredActions(Collections.emptyList());
+            realm.users().get(id).update(existing);
+            realm.users().get(id).resetPassword(passwordCredential(p.getAppAdminPassword()));
+            log.info("Admin user '{}' synchronized (profile + password)", username);
+        } else {
+            id = createAdmin(realm, username);
+        }
+        boolean hasAdmin = realm.users().get(id).roles().realmLevel().listAll().stream()
+                .anyMatch(r -> Roles.ADMIN.equals(r.getName()));
+        if (!hasAdmin) {
+            realm.users().get(id).roles().realmLevel()
+                    .add(List.of(realm.roles().get(Roles.ADMIN).toRepresentation()));
+        }
+    }
 
+    private String createAdmin(RealmResource realm, String username) {
         UserRepresentation u = new UserRepresentation();
         u.setUsername(username);
         u.setEmail(username + "@local.dev");
         u.setEmailVerified(true);
         u.setEnabled(true);
-        CredentialRepresentation cred = new CredentialRepresentation();
-        cred.setType(CredentialRepresentation.PASSWORD);
-        cred.setValue(p.getAppAdminPassword());
-        cred.setTemporary(false);
-        u.setCredentials(Collections.singletonList(cred));
+        u.setFirstName("System");
+        u.setLastName("Administrator");
+        u.setRequiredActions(Collections.emptyList());
+        u.setCredentials(Collections.singletonList(passwordCredential(p.getAppAdminPassword())));
         realm.users().create(u);
-
-        String id = realm.users().search(username, true).get(0).getId();
-        realm.users().get(id).roles().realmLevel().add(List.of(realm.roles().get("admin").toRepresentation()));
+        log.info("Admin user '{}' created", username);
+        return realm.users().search(username, true).get(0).getId();
     }
 
-    @EventListener(ApplicationEvent.class)
-    public void init() {
-        ensureRealm();
-        RealmResource realm = keycloak.realm(p.getRealm());
-        ensureRole(realm, "admin");
-        ensureRole(realm, "user");
-        ensureClient(realm);
-        ensureAdminUser(realm);
-        log.info("Keycloak realm '{}' initialized", p.getRealm());
+    private CredentialRepresentation passwordCredential(String value) {
+        CredentialRepresentation cred = new CredentialRepresentation();
+        cred.setType(CredentialRepresentation.PASSWORD);
+        cred.setValue(value);
+        cred.setTemporary(false);
+        return cred;
     }
 }
