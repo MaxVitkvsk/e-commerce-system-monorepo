@@ -1,5 +1,6 @@
 package com.vitkvsk.user_service.IT.paymentcard;
 
+import com.vitkvsk.user_service.IT.TestJwt;
 import com.vitkvsk.user_service.IntegrationTest;
 import com.vitkvsk.user_service.dto.paymentcard.PaymentCardCreateDto;
 import com.vitkvsk.user_service.dto.paymentcard.PaymentCardUpdateDto;
@@ -23,8 +24,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class PaymentCardFlowTest {
 
     @Autowired
-    private MockMvc mockMvc;
-
+    private MockMvc
+            mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -49,10 +50,10 @@ class PaymentCardFlowTest {
     @Test
     void shouldCreateAndGetCard() throws Exception {
         PaymentCardCreateDto createDto = new PaymentCardCreateDto(
-                userId, "1234567890123456", "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28)
-        );
+                userId, "1234567890123456", "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28));
 
         String response = mockMvc.perform(post("/api/cards")
+                        .with(TestJwt.user(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(status().isCreated())
@@ -61,7 +62,7 @@ class PaymentCardFlowTest {
 
         Long cardId = objectMapper.readTree(response).get("id").asLong();
 
-        mockMvc.perform(get("/api/cards/{id}", cardId))
+        mockMvc.perform(get("/api/cards/{id}", cardId).with(TestJwt.user(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.id").value(cardId))
                 .andExpect(jsonPath("$.holder").value("JOHN DOD"));
@@ -70,10 +71,10 @@ class PaymentCardFlowTest {
     @Test
     void shouldUpdateCard() throws Exception {
         PaymentCardCreateDto createDto = new PaymentCardCreateDto(
-                userId, "9876543210987654", "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28)
-        );
+                userId, "9876543210987654", "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28));
 
         String response = mockMvc.perform(post("/api/cards")
+                        .with(TestJwt.user(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(status().isCreated())
@@ -82,10 +83,10 @@ class PaymentCardFlowTest {
         Long cardId = objectMapper.readTree(response).get("id").asLong();
 
         PaymentCardUpdateDto updateDto = new PaymentCardUpdateDto(
-                "JANE DOD", LocalDate.of(2031, Month.APRIL, 28), false
-        );
+                "JANE DOD", LocalDate.of(2031, Month.APRIL, 28), false);
 
         mockMvc.perform(put("/api/cards/{id}", cardId)
+                        .with(TestJwt.admin(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(updateDto)))
                 .andExpect(status().isOk())
@@ -96,10 +97,10 @@ class PaymentCardFlowTest {
     @Test
     void shouldDeleteCard() throws Exception {
         PaymentCardCreateDto createDto = new PaymentCardCreateDto(
-                userId, "1111222233334444", "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28)
-        );
+                userId, "1111222233334444", "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28));
 
         String response = mockMvc.perform(post("/api/cards")
+                        .with(TestJwt.user(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(createDto)))
                 .andExpect(status().isCreated())
@@ -107,10 +108,12 @@ class PaymentCardFlowTest {
 
         Long cardId = objectMapper.readTree(response).get("id").asLong();
 
-        mockMvc.perform(delete("/api/cards/{id}", cardId))
+        mockMvc.perform(delete("/api/cards/{id}", cardId)
+                        .with(TestJwt.admin(userId)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get("/api/cards/{id}", cardId))
+        mockMvc.perform(get("/api/cards/{id}", cardId)
+                        .with(TestJwt.admin(userId)))
                 .andExpect(status().isNotFound());
     }
 
@@ -118,19 +121,19 @@ class PaymentCardFlowTest {
     void shouldRejectCardCreationWhenLimitExceeded() throws Exception {
         for (int i = 0; i < 5; i++) {
             PaymentCardCreateDto createDto = new PaymentCardCreateDto(
-                    userId, "123456789012345" + i, "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28)
-            );
+                    userId, "123456789012345" + i, "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28));
             mockMvc.perform(post("/api/cards")
+                            .with(TestJwt.user(userId))
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(createDto)))
                     .andExpect(status().isCreated());
         }
 
         PaymentCardCreateDto exceedDto = new PaymentCardCreateDto(
-                userId, "9999888877776666", "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28)
-        );
+                userId, "9999888877776666", "JOHN DOD", LocalDate.of(2030, Month.APRIL, 28));
 
         mockMvc.perform(post("/api/cards")
+                        .with(TestJwt.user(userId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(exceedDto)))
                 .andExpect(status().isBadRequest());

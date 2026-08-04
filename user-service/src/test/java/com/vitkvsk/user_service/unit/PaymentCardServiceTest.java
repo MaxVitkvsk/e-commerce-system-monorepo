@@ -86,7 +86,7 @@ class PaymentCardServiceTest {
         when(userRepository.findByIdWithCards(testUserId)).thenReturn(Optional.of(testUser));
         when(cardRepository.existsByNumber(createDto.number())).thenReturn(true);
 
-        assertThrows(EntityAlreadyExistsException.class, () -> paymentCardService.createCard(createDto));
+        assertThrows(EntityAlreadyExistsException.class, () -> paymentCardService.createCard(createDto, testUserId));
         verify(cardRepository, never()).save(any(PaymentCard.class));
     }
 
@@ -95,7 +95,7 @@ class PaymentCardServiceTest {
         when(userRepository.findByIdWithCards(testUserId))
                 .thenReturn(Optional.of(userWithCards(User.MAX_CARDS, testUserId)));
 
-        assertThrows(CardLimitExceededException.class, () -> paymentCardService.createCard(createDto));
+        assertThrows(CardLimitExceededException.class, () -> paymentCardService.createCard(createDto, testUserId));
         verify(cardRepository, never()).save(any(PaymentCard.class));
     }
 
