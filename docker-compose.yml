@@ -1,21 +1,37 @@
 services:
-  postgres:
+  postgres-user:
     image: postgres:15-alpine
     container_name: postgres-user
     environment:
-      POSTGRES_DB: ${POSTGRES_DB}
-      POSTGRES_USER: ${POSTGRES_USER}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
+      POSTGRES_DB: ${USER_SERVICE_DB_NAME}
+      POSTGRES_USER: ${USER_SERVICE_DB_USER}
+      POSTGRES_PASSWORD: ${USER_SERVICE_DB_PASSWORD}
     ports: ["5436:5432"]
     volumes: [user_pg_data:/var/lib/postgresql/data]
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER} -d ${POSTGRES_DB}"]
+      test: ["CMD-SHELL", "pg_isready -U ${USER_SERVICE_DB_USER} -d ${USER_SERVICE_DB_NAME}"]
       interval: 10s
       timeout: 5s
       retries: 5
 
-  redis:
+  postgres-order:
+    image: postgres:15-alpine
+    container_name: postgres-order
+    environment:
+      POSTGRES_DB: ${ORDER_SERVICE_DB_NAME}
+      POSTGRES_USER: ${ORDER_SERVICE_DB_USER}
+      POSTGRES_PASSWORD: ${ORDER_SERVICE_DB_PASSWORD}
+    ports: ["5438:5432"]
+    volumes: [order_pg_data:/var/lib/postgresql/data]
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${ORDER_SERVICE_DB_USER} -d ${ORDER_SERVICE_DB_NAME}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis-user:
     image: redis:7-alpine
+    container_name: redis-user
     command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru
     ports: ["6379:6379"]
     healthcheck:
@@ -48,58 +64,81 @@ services:
       KC_DB_URL: jdbc:postgresql://postgres-keycloak:5432/${KEYCLOAK_DB_NAME}
       KC_DB_USERNAME: ${KEYCLOAK_DB_USER}
       KC_DB_PASSWORD: ${KEYCLOAK_DB_PASSWORD}
-      KC_BOOTSTRAP_ADMIN_USERNAME: ${KC_BOOTSTRAP_ADMIN_USERNAME}
-      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      KC_BOOTSTRAP_ADMIN_USERNAME: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME}
+      KC_BOOTSTRAP_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD}
       KC_HEALTH_ENABLED: "true"
       KC_HTTP_ENABLED: "true"
-    ports: ["8180:8080"]
+    ports: ["${KEYCLOAK_SERVER_PORT}:8080"]
     depends_on:
       postgres-keycloak: {condition: service_healthy}
     healthcheck:
-      test: [ "CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000; echo -e 'GET /health/ready HTTP/1.0\r\nHost: localhost\r\n\r\n' >&3; grep -q 200 <&3" ]
+      test: ["CMD-SHELL", "exec bash -c 'exec 3<>/dev/tcp/127.0.0.1/9000; echo -e \"GET /health/ready HTTP/1.0\\r\\nHost: localhost\\r\\n\\r\\n\" >&3; grep -q 200 <&3'"]
       interval: 10s
       timeout: 5s
       retries: 30
-      start_period: 60s
+      start_period: 120s
 
   auth-service:
     build: {context: ., dockerfile: auth-service/Dockerfile}
     container_name: auth-service
     environment:
-      SERVER_PORT: 8081
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: ${AUTH_SERVICE_SERVER_PORT}
+      HTTP_CONNECT_TIMEOUT: ${AUTH_HTTP_CONNECT_TIMEOUT}
+      HTTP_READ_TIMEOUT: ${AUTH_HTTP_READ_TIMEOUT}
       KEYCLOAK_URL: http://keycloak:8080
       KEYCLOAK_REALM: ${KEYCLOAK_REALM}
       KEYCLOAK_CLIENT_ID: ${KEYCLOAK_CLIENT_ID}
       KEYCLOAK_CLIENT_SECRET: ${KEYCLOAK_CLIENT_SECRET}
-      KEYCLOAK_ADMIN_USER: ${KC_BOOTSTRAP_ADMIN_USERNAME}
-      KEYCLOAK_ADMIN_PASSWORD: ${KC_BOOTSTRAP_ADMIN_PASSWORD}
+      KEYCLOAK_ADMIN_REALM: ${KEYCLOAK_ADMIN_REALM}
+      KEYCLOAK_ADMIN_CLIENT_ID: ${KEYCLOAK_ADMIN_CLIENT_ID}
+      KEYCLOAK_ADMIN_USER: ${KEYCLOAK_BOOTSTRAP_ADMIN_USERNAME}
+      KEYCLOAK_ADMIN_PASSWORD: ${KEYCLOAK_BOOTSTRAP_ADMIN_PASSWORD}
       APP_ADMIN_USERNAME: ${APP_ADMIN_USERNAME}
       APP_ADMIN_PASSWORD: ${APP_ADMIN_PASSWORD}
-      USER_SERVICE_URL: http://user-service:8080
+      USER_SERVICE_URL: http://user-service:${USER_SERVICE_SERVER_PORT}
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
-    ports: ["8081:8081"]
+    ports: ["${AUTH_SERVICE_SERVER_PORT}:${AUTH_SERVICE_SERVER_PORT}"]
     depends_on:
       keycloak: {condition: service_healthy}
 
   user-service:
     build: {context: ., dockerfile: user-service/Dockerfile}
     container_name: user-service
-    ports: ["8080:8080"]
     environment:
       SPRING_PROFILES_ACTIVE: docker
-      DB_HOST: ${DB_HOST}
-      DB_PORT: ${DB_PORT}
-      DB_NAME: ${DB_NAME}
-      DB_USER: ${DB_USER}
-      DB_PASSWORD: ${DB_PASSWORD}
-      REDIS_HOST: ${REDIS_HOST}
-      REDIS_PORT: ${REDIS_PORT}
+      SERVER_PORT: ${USER_SERVICE_SERVER_PORT}
+      DB_HOST: ${USER_SERVICE_DB_HOST}
+      DB_PORT: ${USER_SERVICE_DB_PORT}
+      DB_NAME: ${USER_SERVICE_DB_NAME}
+      DB_USER: ${USER_SERVICE_DB_USER}
+      DB_PASSWORD: ${USER_SERVICE_DB_PASSWORD}
+      REDIS_HOST: ${USER_SERVICE_REDIS_HOST}
+      REDIS_PORT: ${USER_SERVICE_REDIS_PORT}
       KEYCLOAK_ISSUER_URI: http://keycloak:8080/realms/${KEYCLOAK_REALM}
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+    ports: ["${USER_SERVICE_SERVER_PORT}:${USER_SERVICE_SERVER_PORT}"]
     depends_on:
-      postgres: {condition: service_healthy}
-      redis: {condition: service_healthy}
+      postgres-user: {condition: service_healthy}
+      redis-user: {condition: service_healthy}
+
+  order-service:
+    build: {context: ., dockerfile: order-service/Dockerfile}
+    container_name: order-service
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SERVER_PORT: ${ORDER_SERVICE_SERVER_PORT}
+      DB_HOST: ${ORDER_SERVICE_DB_HOST}
+      DB_PORT: ${ORDER_SERVICE_DB_PORT}
+      DB_NAME: ${ORDER_SERVICE_DB_NAME}
+      DB_USER: ${ORDER_SERVICE_DB_USER}
+      DB_PASSWORD: ${ORDER_SERVICE_DB_PASSWORD}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+    ports: ["${ORDER_SERVICE_SERVER_PORT}:${ORDER_SERVICE_SERVER_PORT}"]
+    depends_on:
+      postgres-order: {condition: service_healthy}
 
 volumes:
   user_pg_data:
+  order_pg_data:
   kc_pg_data:

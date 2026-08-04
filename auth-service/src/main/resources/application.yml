@@ -1,7 +1,9 @@
 server:
   port: ${SERVER_PORT:8081}
+
 spring:
-  application: {name: auth-service}
+  application:
+    name: auth-service
 
 http:
   client:
@@ -25,4 +27,7 @@ app:
   internal-secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
 
 management:
-  endpoints.web.exposure.include: health,info
+  endpoints:
+    web:
+      exposure:
+        include: health,info
