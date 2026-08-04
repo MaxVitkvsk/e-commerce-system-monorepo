@@ -24,8 +24,35 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class KeycloakTokenClient {
 
-    private final RestTemplate rest;
-    private final KeycloakProperties kc;
+    private final RestTemplate restTemplate;
+    private final KeycloakProperties keycloakProperties;
+
+    private Map<String, Object> postForm(String url, MultiValueMap<String, String> form) {
+        try {
+            return restTemplate.postForObject(url, new HttpEntity<>(form, formHeaders()), Map.class);
+        } catch (HttpClientErrorException e) {
+            log.warn("Keycloak token endpoint rejected request: {} body={}", e.getStatusCode(), e.getResponseBodyAsString());
+            throw AuthException.unauthorized("Invalid credentials or token");
+        }
+    }
+
+    private MultiValueMap<String, String> clientForm() {
+        MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
+        form.add("client_id", keycloakProperties.getClientId());
+        form.add("client_secret", keycloakProperties.getClientSecret());
+        return form;
+    }
+
+    private HttpHeaders formHeaders() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
+        return headers;
+    }
+
+    private String oidc(String path) {
+        return keycloakProperties.getUrl() + "/realms/" + keycloakProperties.getRealm()
+                + "/protocol/openid-connect/" + path;
+    }
 
     @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
             maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
@@ -52,41 +79,15 @@ public class KeycloakTokenClient {
             maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
             multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
     public Map<?, ?> introspect(String token) {
-        HttpHeaders h = formHeaders();
-        h.setBasicAuth(kc.getClientId(), kc.getClientSecret());
+        HttpHeaders headers = formHeaders();
+        headers.setBasicAuth(keycloakProperties.getClientId(), keycloakProperties.getClientSecret());
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("token", token);
         try {
-            return rest.postForObject(oidc("token/introspect"), new HttpEntity<>(form, h), Map.class);
+            return restTemplate.postForObject(oidc("token/introspect"), new HttpEntity<>(form, headers), Map.class);
         } catch (HttpClientErrorException e) {
             log.warn("Introspect rejected: {} body={}", e.getStatusCode(), e.getResponseBodyAsString());
             throw e;
         }
-    }
-
-    private Map<String, Object> postForm(String url, MultiValueMap<String, String> form) {
-        try {
-            return rest.postForObject(url, new HttpEntity<>(form, formHeaders()), Map.class);
-        } catch (HttpClientErrorException e) {
-            log.warn("Keycloak token endpoint rejected request: {} body={}", e.getStatusCode(), e.getResponseBodyAsString());
-            throw AuthException.unauthorized("Invalid credentials or token");
-        }
-    }
-
-    private MultiValueMap<String, String> clientForm() {
-        MultiValueMap<String, String> f = new LinkedMultiValueMap<>();
-        f.add("client_id", kc.getClientId());
-        f.add("client_secret", kc.getClientSecret());
-        return f;
-    }
-
-    private HttpHeaders formHeaders() {
-        HttpHeaders h = new HttpHeaders();
-        h.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        return h;
-    }
-
-    private String oidc(String path) {
-        return kc.getUrl() + "/realms/" + kc.getRealm() + "/protocol/openid-connect/" + path;
     }
 }

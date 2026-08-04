@@ -21,17 +21,6 @@ public class KeycloakRealmInitializer {
     private final Keycloak keycloak;
     private final KeycloakProperties p;
 
-    @EventListener(ApplicationReadyEvent.class)
-    public void init() {
-        ensureRealm();
-        RealmResource realm = keycloak.realm(p.getRealm());
-        ensureRole(realm, Roles.ADMIN);
-        ensureRole(realm, Roles.USER);
-        ensureClient(realm);
-        ensureAdminUser(realm);
-        log.info("Keycloak realm '{}' initialized", p.getRealm());
-    }
-
     private void ensureRealm() {
         try { keycloak.realm(p.getRealm()).toRepresentation(); }
         catch (NotFoundException e) {
@@ -133,5 +122,16 @@ public class KeycloakRealmInitializer {
         cred.setValue(value);
         cred.setTemporary(false);
         return cred;
+    }
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void init() {
+        ensureRealm();
+        RealmResource realm = keycloak.realm(p.getRealm());
+        ensureRole(realm, Roles.ADMIN);
+        ensureRole(realm, Roles.USER);
+        ensureClient(realm);
+        ensureAdminUser(realm);
+        log.info("Keycloak realm '{}' initialized", p.getRealm());
     }
 }

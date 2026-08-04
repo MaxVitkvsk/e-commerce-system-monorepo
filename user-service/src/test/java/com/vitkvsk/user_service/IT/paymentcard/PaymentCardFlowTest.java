@@ -28,7 +28,7 @@ class PaymentCardFlowTest {
             mockMvc;
     @Autowired
     private ObjectMapper objectMapper;
-    
+
     @Autowired
     private UserRepository userRepository;
 
