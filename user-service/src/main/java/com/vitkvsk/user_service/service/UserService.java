@@ -20,6 +20,7 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
 import java.util.UUID;
 
 @Slf4j
@@ -63,6 +64,20 @@ public class UserService {
                     log.debug("User not found: id={}", id);
                     return new ResourceNotFoundException(USER_NOT_FOUND + id);
                 });
+        return userMapper.toResponseDto(user);
+    }
+
+    @Transactional(readOnly = true)
+    public List<UserResponseDto> getUsersByIds(List<UUID> ids) {
+        return userRepository.findAllById(ids).stream()
+                .map(userMapper::toResponseDto)
+                .toList();
+    }
+
+    @Transactional(readOnly = true)
+    public UserResponseDto getUserByEmail(String email) {
+        User user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new ResourceNotFoundException("User " + email));
         return userMapper.toResponseDto(user);
     }
 

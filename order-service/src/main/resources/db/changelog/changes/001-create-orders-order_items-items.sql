@@ -12,7 +12,7 @@ CREATE TABLE items (
     CONSTRAINT chk_items_price CHECK (price >= 0)
 );
 
-CREATE SEQUENCE items_id_seq START WITH 1 INCREMENT BY 50 NO MINVALUE NO CACHE;
+CREATE SEQUENCE items_id_seq START WITH 1 INCREMENT BY 50 NO MINVALUE;
 
 CREATE INDEX idx_items_name ON items (name);
 --rollback DROP TABLE items;
@@ -31,6 +31,8 @@ CREATE TABLE orders (
     CONSTRAINT chk_orders_total CHECK (total_price >= 0)
 );
 
+CREATE SEQUENCE order_id_seq START WITH 1 INCREMENT BY 50 NO MINVALUE;
+
 CREATE INDEX idx_orders_user_id ON orders (user_id);
 CREATE INDEX idx_orders_status ON orders (status) WHERE deleted = FALSE;
 --rollback DROP TABLE orders;
@@ -38,7 +40,7 @@ CREATE INDEX idx_orders_status ON orders (status) WHERE deleted = FALSE;
 --changeset vitkvsk:003-create-order-items
 CREATE TABLE order_items (
     id          BIGINT                   NOT NULL,
-    order_id    UUID                     NOT NULL,
+    order_id    BIGINT                   NOT NULL,
     item_id     BIGINT                   NOT NULL,
     quantity    INTEGER                  NOT NULL,
     created_at  TIMESTAMP WITH TIME ZONE NOT NULL,
@@ -52,7 +54,7 @@ CREATE TABLE order_items (
     CONSTRAINT uq_order_items_order_item UNIQUE (order_id, item_id)
 );
 
-CREATE SEQUENCE order_items_id_seq START WITH 1 INCREMENT BY 50 NO MINVALUE NO CACHE;
+CREATE SEQUENCE order_items_id_seq START WITH 1 INCREMENT BY 50 NO MINVALUE;
 
 CREATE INDEX idx_order_items_order_id ON order_items (order_id);
 CREATE INDEX idx_order_items_item_id ON order_items (item_id);
