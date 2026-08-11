@@ -119,7 +119,7 @@ class OrderFlowTest {
 
     @Test
     void shouldReturnOrderWithoutUserWhenUserServiceDown() throws Exception {
-        WireMock.reset();  // user-service «мёртв» — стабов нет
+        WireMock.reset();
         WireMock.stubFor(WireMock.get(WireMock.urlPathMatching("/api/users/internal/.*"))
                 .willReturn(WireMock.aResponse().withStatus(500)));
 

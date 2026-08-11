@@ -78,7 +78,7 @@ class OrderServiceTest {
                 .build();
         testOrder.addItem(orderItem);
 
-        testUserInfo = new UserInfoDto(testUserId, "Pop", "Dod", "john@example.com");
+        testUserInfo = new UserInfoDto(testUserId, "Pop", "Dod", "pop@example.com");
     }
 
     @Test
