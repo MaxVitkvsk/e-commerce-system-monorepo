@@ -31,7 +31,9 @@ public class Order extends BaseEntity{
     @Column(name = "user_id", nullable = false)
     private UUID userId;
 
+    @Enumerated(EnumType.STRING)
     @Column(nullable = false, length = 32)
+    @Builder.Default
     private OrderStatus status = OrderStatus.NEW;
 
     @Column(name = "total_price", nullable = false)

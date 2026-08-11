@@ -34,7 +34,7 @@ public class OrderService {
     private final OrderMapper orderMapper;
 
     private OrderItem buildItem(OrderItemCreateDto line) {
-        Item item = itemRepository.getReferenceById(line.itemId()); 
+        Item item = itemRepository.getReferenceById(line.itemId());
         return OrderItem.builder().item(item).quantity(line.quantity()).build();
     }
 

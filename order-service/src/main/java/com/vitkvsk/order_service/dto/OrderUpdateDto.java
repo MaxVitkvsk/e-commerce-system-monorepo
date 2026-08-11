@@ -7,4 +7,4 @@ import java.util.List;
 
 public record OrderUpdateDto(
         OrderStatus status,
-        @Valid List<OrderItemCreateDto> items ) {}
+         List<@Valid OrderItemCreateDto> items ) {}

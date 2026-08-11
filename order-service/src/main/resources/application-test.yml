@@ -1,0 +1,19 @@
+spring:
+  jpa:
+    hibernate:
+      ddl-auto: validate
+  liquibase:
+    enabled: true
+    change-log: classpath:db/changelog/db.changelog-master.yaml
+
+app:
+  user-service-url: http://localhost:8089
+  internal-secret: test-secret
+
+resilience4j:
+  circuitbreaker:
+    instances:
+      userService:
+        slidingWindowSize: 100
+        minimumNumberOfCalls: 100
+        failureRateThreshold: 100

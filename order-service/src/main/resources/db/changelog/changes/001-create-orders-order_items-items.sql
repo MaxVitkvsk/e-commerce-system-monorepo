@@ -20,7 +20,7 @@ CREATE INDEX idx_items_name ON items (name);
 
 --changeset vitkvsk:002-create-orders
 CREATE TABLE orders (
-    id          UUID                     NOT NULL,
+    id          BIGINT                   NOT NULL,
     user_id     UUID                     NOT NULL,
     status      VARCHAR(32)              NOT NULL,
     total_price NUMERIC(12, 2)           NOT NULL,
@@ -31,11 +31,13 @@ CREATE TABLE orders (
     CONSTRAINT chk_orders_total CHECK (total_price >= 0)
 );
 
-CREATE SEQUENCE order_id_seq START WITH 1 INCREMENT BY 50 NO MINVALUE;
+CREATE SEQUENCE orders_id_seq START WITH 1 INCREMENT BY 50 NO MINVALUE;
 
 CREATE INDEX idx_orders_user_id ON orders (user_id);
 CREATE INDEX idx_orders_status ON orders (status) WHERE deleted = FALSE;
+CREATE INDEX idx_orders_created_at ON orders (created_at);
 --rollback DROP TABLE orders;
+--rollback DROP SEQUENCE orders_id_seq;
 
 --changeset vitkvsk:003-create-order-items
 CREATE TABLE order_items (

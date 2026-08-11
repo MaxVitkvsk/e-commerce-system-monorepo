@@ -12,5 +12,5 @@ import java.util.UUID;
 public record OrderCreateDto(
         @NotNull UUID userId,
         @NotNull @Positive BigDecimal totalPrice,
-        @NotEmpty @Valid List<OrderItemCreateDto> items
+        @NotEmpty  List<@Valid OrderItemCreateDto> items
 ) {}
