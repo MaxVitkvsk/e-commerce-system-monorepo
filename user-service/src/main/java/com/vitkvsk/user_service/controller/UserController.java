@@ -29,6 +29,12 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.CREATED).body(userService.createUser(req.user(), req.id()));
     }
 
+    @DeleteMapping("/internal/{id}")
+    public ResponseEntity<Void> deleteInternal(@PathVariable UUID id) {
+        userService.deleteUserInternal(id);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<UserResponseDto> getUserById(@PathVariable UUID id) {
         security.requireOwnerOrAdmin(id);

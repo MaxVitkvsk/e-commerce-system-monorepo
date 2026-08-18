@@ -32,6 +32,7 @@ public class UserService {
 
     private final UserRepository userRepository;
     private final UserMapper userMapper;
+    private final UserCacheEvictor userCacheEvictor;
 
     @Transactional
     public UserResponseDto createUser(UserCreateDto dto, UUID keycloakId) {
@@ -53,6 +54,17 @@ public class UserService {
 
         log.info("User created: id={}", saved.getId());
         return userMapper.toResponseDto(saved);
+    }
+
+    @Transactional
+    public void deleteUserInternal(UUID id) {
+        if (!userRepository.existsById(id)) {
+            log.debug("Rollback noop: user already absent id={}", id);
+            return;
+        }
+        userRepository.deleteById(id);
+        userCacheEvictor.evict(id);
+        log.info("User rolled back: id={}", id);
     }
 
     @Transactional(readOnly = true)

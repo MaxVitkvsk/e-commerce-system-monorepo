@@ -24,6 +24,7 @@ import org.springframework.stereotype.Service;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -61,6 +62,24 @@ public class AuthService {
     }
 
     public AuthResponse register(RegisterRequest req) {
+        String keycloakId = null;
+        boolean profileCreated = false;
+        try {
+            keycloakId = createKeycloakUser(req);
+            userServiceClient.createProfile(keycloakId, req);
+            profileCreated = true;
+            assignUserRole(keycloakId);
+            return login(new AuthRequest(req.username(), req.password()));
+        } catch (AuthException e) {
+            compensate(profileCreated, keycloakId);
+            throw e;
+        } catch (Exception e) {
+            compensate(profileCreated, keycloakId);
+            throw AuthException.badRequest("Registration failed: " + e.getMessage());
+        }
+    }
+
+    private String createKeycloakUser(RegisterRequest req) {
         RealmResource realm = keycloak.realm(kc.getRealm());
         if (!realm.users().search(req.username(), true).isEmpty())
             throw AuthException.conflict("Username already exists");
@@ -74,28 +93,43 @@ public class AuthService {
         u.setEmailVerified(true);
         u.setCredentials(Collections.singletonList(passwordCredential(req.password())));
 
-        String keycloakId;
         try (Response resp = realm.users().create(u)) {
             if (resp.getStatus() != 201) throw AuthException.badRequest("Keycloak user creation failed");
-            keycloakId = realm.users().search(req.username(), true).get(0).getId();
         } catch (AuthException e) {
             throw e;
         } catch (Exception e) {
             throw AuthException.badRequest("Keycloak error: " + e.getMessage());
         }
+        return realm.users().search(req.username(), true).get(0).getId();
+    }
 
-        realm.users().get(keycloakId).roles().realmLevel()
-                .add(List.of(realm.roles().get(Roles.USER).toRepresentation()));
+    private void assignUserRole(String keycloakId) {
+        keycloak.realm(kc.getRealm()).users().get(keycloakId).roles().realmLevel()
+                .add(List.of(keycloak.realm(kc.getRealm()).roles().get(Roles.USER).toRepresentation()));
+    }
 
+    private void compensate(boolean profileCreated, String keycloakId) {
+        if (keycloakId == null) return;
+        if (profileCreated) rollbackUserProfile(keycloakId);
+        rollbackKeycloakUser(keycloakId);
+    }
+
+    void rollbackUserProfile(String keycloakId) {
         try {
-            userServiceClient.createProfile(keycloakId, req);
-        } catch (Exception e) {
-            log.error("profile creation failed after retries, compensating keycloak user {}", keycloakId, e);
-            try { realm.users().get(keycloakId).remove(); }
-            catch (Exception ex) { log.error("compensation failed: cannot remove keycloak user {}", keycloakId, ex); }
-            throw AuthException.badRequest("Profile creation failed: " + e.getMessage());
+            userServiceClient.deleteProfile(UUID.fromString(keycloakId));
+            log.info("compensated user profile {}", keycloakId);
+        } catch (Exception ex) {
+            log.error("compensation FAILED: user profile {}", keycloakId, ex);
         }
-        return login(new AuthRequest(req.username(), req.password()));
+    }
+
+    void rollbackKeycloakUser(String keycloakId) {
+        try {
+            keycloak.realm(kc.getRealm()).users().get(keycloakId).remove();
+            log.info("compensated keycloak user {}", keycloakId);
+        } catch (Exception ex) {
+            log.error("compensation FAILED: keycloak user {}", keycloakId, ex);
+        }
     }
 
     public AuthResponse login(AuthRequest req) {

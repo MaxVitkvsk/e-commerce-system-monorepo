@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Component;
@@ -16,6 +17,7 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -48,5 +50,15 @@ public class UserServiceClient {
         } catch (HttpClientErrorException e) {
             throw AuthException.badRequest("Profile creation rejected: " + e.getStatusCode());
         }
+    }
+
+    @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
+            maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
+            multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
+    public void deleteProfile(UUID userId) {
+        HttpHeaders headers = new HttpHeaders();
+        headers.set(INTERNAL_TOKEN_HEADER, internalSecret);
+        rest.exchange(userServiceUrl + "/api/users/internal/" + userId,
+                HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
     }
 }
