@@ -131,11 +131,15 @@ services:
       AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_SERVER_PORT}
       USER_SERVICE_URL: http://user-service:${USER_SERVICE_SERVER_PORT}
       ORDER_SERVICE_URL: http://order-service:${ORDER_SERVICE_SERVER_PORT}
+
+      REDIS_HOST: redis-user
+      REDIS_PORT: 6379
     ports: [ "${GATEWAY_SERVER_PORT}:${GATEWAY_SERVER_PORT}" ]
     depends_on:
       auth-service: { condition: service_started }
       user-service: { condition: service_started }
       order-service: { condition: service_started }
+      redis-user: { condition: service_healthy }
 
 
   order-service:
