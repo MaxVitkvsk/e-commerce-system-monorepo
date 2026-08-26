@@ -1,4 +1,51 @@
 services:
+  mongo:
+    image: mongo:8.0
+    container_name: payment-mongo
+    environment:
+      MONGO_INITDB_DATABASE: ${PAYMENT_SERVICE_DB_NAME}
+    ports: [ "27017:27017" ]
+    volumes: [ payment_mongo_data:/data/db ]
+    healthcheck:
+      test: [ "CMD", "mongosh", "--eval", "db.adminCommand('ping')" ]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  kafka:
+    image: apache/kafka:4.0.0
+    container_name: kafka
+    environment:
+      KAFKA_NODE_ID: ${KAFKA_NODE_ID}
+      KAFKA_PROCESS_ROLES: broker,controller
+      KAFKA_CONTROLLER_QUORUM_VOTERS: 1@localhost:${KAFKA_CONTROLLER_PORT}
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:${KAFKA_PORT},CONTROLLER://0.0.0.0:${KAFKA_CONTROLLER_PORT}
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka:${KAFKA_PORT}
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+      KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: ${KAFKA_REPLICATION_FACTOR}
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: ${KAFKA_REPLICATION_FACTOR}
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 1
+      KAFKA_NUM_PARTITIONS: ${KAFKA_NUM_PARTITIONS}
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"
+    volumes: [ kafka_data:/var/lib/kafka/data ]
+    healthcheck:
+      test: [ "CMD-SHELL", "/opt/kafka/bin/kafka-topics.sh --bootstrap-server localhost:${KAFKA_PORT} --list >/dev/null 2>&1 || exit 1" ]
+      interval: 10s
+      timeout: 10s
+      retries: 10
+
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    environment:
+      DYNAMIC_CONFIG_ENABLED: "true"
+      KAFKA_CLUSTERS_0_NAME: local
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka:9092
+    ports: [ "8084:8080" ]
+    depends_on:
+      kafka: { condition: service_healthy }
+
   postgres-user:
     image: postgres:15-alpine
     container_name: postgres-user
@@ -78,6 +125,21 @@ services:
       retries: 30
       start_period: 120s
 
+  payment-service:
+    build: {context: ., dockerfile: payment-service/Dockerfile}
+    container_name: payment-service
+    environment:
+      SERVER_PORT: ${PAYMENT_SERVICE_SERVER_PORT}
+      DB_HOST: ${PAYMENT_SERVICE_DB_HOST}
+      DB_PORT: ${PAYMENT_SERVICE_DB_PORT}
+      DB_NAME: ${PAYMENT_SERVICE_DB_NAME}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
+      RANDOM_API_URL: ${RANDOM_API_URL}
+    depends_on:
+      mongo: { condition: service_healthy}
+      kafka: {condition: service_healthy}
+
   auth-service:
     build: {context: ., dockerfile: auth-service/Dockerfile}
     container_name: auth-service
@@ -131,11 +193,16 @@ services:
       AUTH_SERVICE_URL: http://auth-service:${AUTH_SERVICE_SERVER_PORT}
       USER_SERVICE_URL: http://user-service:${USER_SERVICE_SERVER_PORT}
       ORDER_SERVICE_URL: http://order-service:${ORDER_SERVICE_SERVER_PORT}
+      PAYMENT_SERVICE_URL: http://payment-service:${PAYMENT_SERVICE_SERVER_PORT}
+
+      REDIS_HOST: redis-user
+      REDIS_PORT: 6379
     ports: [ "${GATEWAY_SERVER_PORT}:${GATEWAY_SERVER_PORT}" ]
     depends_on:
       auth-service: { condition: service_started }
       user-service: { condition: service_started }
       order-service: { condition: service_started }
+      redis-user: { condition: service_healthy }
 
 
   order-service:
@@ -149,6 +216,8 @@ services:
       DB_NAME: ${ORDER_SERVICE_DB_NAME}
       DB_USER: ${ORDER_SERVICE_DB_USER}
       DB_PASSWORD: ${ORDER_SERVICE_DB_PASSWORD}
+      KAFKA_BOOTSTRAP_SERVERS: ${KAFKA_BOOTSTRAP_SERVERS}
+      PAYMENT_EVENTS_TOPIC: ${PAYMENT_EVENTS_TOPIC}
       INTERNAL_SERVICE_SECRET: ${INTERNAL_SERVICE_SECRET}
     ports: ["${ORDER_SERVICE_SERVER_PORT}:${ORDER_SERVICE_SERVER_PORT}"]
     depends_on:
@@ -158,3 +227,5 @@ volumes:
   user_pg_data:
   order_pg_data:
   kc_pg_data:
+  payment_mongo_data:
+  kafka_data:
