@@ -4,17 +4,17 @@ import com.vitkvsk.order_service.dto.UserInfoDto;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
 
-import java.util.*;
+import java.util.Collection;
+import java.util.List;
+import java.util.Map;
+import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -23,20 +23,19 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class UserServiceClient {
 
-    private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Service-Token";
+    private static final ParameterizedTypeReference<List<UserInfoDto>> USER_LIST =
+            new ParameterizedTypeReference<>() {};
 
-    private final RestTemplate rest;
-
-    @Value("${app.user-service-url}") private String userServiceUrl;
-    @Value("${app.internal-secret}")  private String internalSecret;
+    private final RestClient restClient;
 
     @CircuitBreaker(name = "userService", fallbackMethod = "getUserInfoFallback")
     @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
             maxRetries = 2, delay = 500, multiplier = 2.0, jitter = 250)
     public UserInfoDto getUserInfo(UUID userId) {
-        return rest.exchange(userServiceUrl + "/api/users/internal/" + userId,
-                        HttpMethod.GET, new HttpEntity<>(internalHeaders()), UserInfoDto.class)
-                .getBody();
+        return restClient.get()
+                .uri("/api/users/internal/{id}", userId)
+                .retrieve()
+                .body(UserInfoDto.class);
     }
 
     @CircuitBreaker(name = "userService", fallbackMethod = "getUsersFallback")
@@ -44,12 +43,13 @@ public class UserServiceClient {
             maxRetries = 2, delay = 500, multiplier = 2.0, jitter = 250)
     public Map<UUID, UserInfoDto> getUsersByIds(Collection<UUID> ids) {
         String joined = ids.stream().map(UUID::toString).collect(Collectors.joining(","));
-        UserInfoDto[] arr = rest.exchange(
-                        userServiceUrl + "/api/users/internal/ids?ids=" + joined,
-                        HttpMethod.GET, new HttpEntity<>(internalHeaders()), UserInfoDto[].class)
-                .getBody();
-        return arr == null ? Map.of()
-                : Arrays.stream(arr).collect(Collectors.toMap(UserInfoDto::id, Function.identity()));
+        List<UserInfoDto> list = restClient.get()
+                .uri("/api/users/internal/ids?ids={ids}", joined)
+                .retrieve()
+                .body(USER_LIST);
+
+        return list == null ? Map.of()
+                : list.stream().collect(Collectors.toMap(UserInfoDto::id, Function.identity()));
     }
 
     private UserInfoDto getUserInfoFallback(UUID userId, Throwable t) {
@@ -60,11 +60,5 @@ public class UserServiceClient {
     private Map<UUID, UserInfoDto> getUsersFallback(Collection<UUID> ids, Throwable t) {
         log.warn("user-service batch unavailable: {}", t.toString());
         return Map.of();
-    }
-
-    private HttpHeaders internalHeaders() {
-        HttpHeaders h = new HttpHeaders();
-        h.set(INTERNAL_TOKEN_HEADER, internalSecret);
-        return h;
     }
 }
