@@ -5,10 +5,16 @@ import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.server.ServerWebExchange;
 import reactor.core.publisher.Mono;
 
 import java.time.Instant;
+import java.util.Map;
+
 
 @RestController
 public class FallbackController {
@@ -44,4 +50,14 @@ public class FallbackController {
                         "User Service is currently unavailable or timed out."
                 )));
     }
-}
+
+    @RequestMapping(value = "/payment", method = {RequestMethod.GET, RequestMethod.POST, RequestMethod.PUT, RequestMethod.DELETE})
+    public Mono<ResponseEntity<Map<String, Object>>> paymentFallback(ServerWebExchange exchange) {
+        log.warn("Payment fallback triggered: {}", exchange.getRequest().getPath());
+        return Mono.just(ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE)
+                .body(Map.of(
+                        "status", 503,
+                        "error", "PAYMENT_SERVICE_UNAVAILABLE",
+                        "message", "Payment service is temporarily unavailable, retry later",
+                        "path", exchange.getRequest().getPath().value())));
+    }

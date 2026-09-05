@@ -15,7 +15,7 @@ public class InternalServiceFilter extends OncePerRequestFilter {
 
     @Override
     protected boolean shouldNotFilter(HttpServletRequest req) {
-        return !"/api/users/internal".equals(req.getRequestURI());
+        return !req.getRequestURI().startsWith("/api/users/internal");
     }
 
     @Override

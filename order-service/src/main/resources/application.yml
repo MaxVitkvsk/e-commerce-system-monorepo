@@ -21,10 +21,22 @@ spring:
   liquibase:
     change-log: classpath:db/changelog/db.changelog-master.yaml
     enabled: true
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    consumer:
+      group-id: order-service
+      auto-offset-reset: earliest
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.use.type.headers: false
+        spring.json.value.default.type: com.vitkvsk.order_service.dto.event.Paymen
 
 app:
   internal-secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
   user-service-url: ${USER_SERVICE_URL:http://localhost:8080}
+  kafka:
+    topic: ${PAYMENT_EVENTS_TOPIC:payment-events
 
 resilience4j:
   circuitbreaker:

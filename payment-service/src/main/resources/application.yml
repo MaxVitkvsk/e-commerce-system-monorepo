@@ -1,0 +1,46 @@
+server:
+  port: ${SERVER_PORT:8083}
+
+spring:
+  application:
+    name: payment-service
+  data:
+    mongodb:
+      host: ${DB_HOST}
+      port: ${DB_PORT}
+      database: ${DB_NAME}
+  kafka:
+    bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      acks: all
+      retries: 3
+      properties:
+        enable.idempotence: true
+        max.in.flight.requests.per.connection: 5
+
+app:
+  internal-secret: ${INTERNAL_SERVICE_SECRET}
+  kafka:
+    topic: ${PAYMENT_EVENTS_TOPIC:payment-events}
+  random-api:
+    url: ${RANDOM_API_URL:https://www.random.org/integers/?num=1&min=1&max=1000&col=1&base=10&format=plain&rnd=new}
+  retry:
+    max-attempts: 3
+    delay-ms: 500
+    multiplier: 2.0
+    jitter-ms: 100
+    max-delay-ms: 10000
+
+mongock:
+  migration-scan-package: com.vitkvsk.payment_service.migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics
+  endpoint:
+    health:
+      show-details: when_authorized

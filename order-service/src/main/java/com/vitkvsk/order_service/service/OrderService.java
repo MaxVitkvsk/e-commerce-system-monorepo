@@ -2,6 +2,7 @@ package com.vitkvsk.order_service.service;
 
 import com.vitkvsk.order_service.client.UserServiceClient;
 import com.vitkvsk.order_service.dto.*;
+import com.vitkvsk.order_service.dto.event.PaymentCreatedEvent;
 import com.vitkvsk.order_service.entity.Item;
 import com.vitkvsk.order_service.entity.Order;
 import com.vitkvsk.order_service.entity.OrderItem;
@@ -12,6 +13,7 @@ import com.vitkvsk.order_service.repository.ItemRepository;
 import com.vitkvsk.order_service.repository.OrderRepository;
 import com.vitkvsk.order_service.specification.OrderSpecifications;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -19,14 +21,15 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
+import java.util.*;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class OrderService {
+
+    private static final Set<OrderStatus> PRE_PAYMENT_STATUSES =
+            Set.of(OrderStatus.NEW, OrderStatus.CONFIRMED);
 
     private final OrderRepository orderRepository;
     private final ItemRepository itemRepository;
@@ -59,6 +62,32 @@ public class OrderService {
         dto.items().forEach(line -> order.addItem(buildItem(line)));
         Order saved = orderRepository.save(order);
         return toDto(saved);
+    }
+
+    @Transactional
+    public void applyPaymentResult(PaymentCreatedEvent event) {
+        Order order = orderRepository.findById(event.orderId()).orElse(null);
+        if (order == null) {
+            log.warn("Order not found for payment event: orderId={}, eventId={}",
+                    event.orderId(), event.eventId());
+            return;
+        }
+
+        if (!PRE_PAYMENT_STATUSES.contains(order.getStatus())) {
+            log.info("Order {} already {} — payment event skipped (idempotency guard)",
+                    order.getId(), order.getStatus());
+            return;
+        }
+
+        OrderStatus next = "SUCCESS".equals(event.status())
+                ? OrderStatus.PAID
+                : OrderStatus.CANCELLED;
+
+        order.setStatus(next);
+        orderRepository.save(order);
+
+        log.info("Order {} status -> {} (payment status: {})",
+                order.getId(), next, event.status());
     }
 
     @Transactional(readOnly = true)
