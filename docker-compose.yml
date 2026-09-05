@@ -194,7 +194,6 @@ services:
       USER_SERVICE_URL: http://user-service:${USER_SERVICE_SERVER_PORT}
       ORDER_SERVICE_URL: http://order-service:${ORDER_SERVICE_SERVER_PORT}
       PAYMENT_SERVICE_URL: http://payment-service:${PAYMENT_SERVICE_SERVER_PORT}
-
       REDIS_HOST: redis-user
       REDIS_PORT: 6379
     ports: [ "${GATEWAY_SERVER_PORT}:${GATEWAY_SERVER_PORT}" ]

@@ -78,7 +78,6 @@ spring:
                     fallbackUri: forward:/fallback/payment
 
 
-
 management:
   endpoints:
     web:
