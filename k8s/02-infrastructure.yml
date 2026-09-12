@@ -24,7 +24,10 @@ spec:
                   name: app-config
                   key: USER_SERVICE_DB_NAME
             - name: POSTGRES_USER
-              value: "user_user"
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: USER_SERVICE_DB_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -54,7 +57,6 @@ spec:
     app: postgres-user
   ports:
     - port: 5432
-
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -82,7 +84,10 @@ spec:
                   name: app-config
                   key: ORDER_SERVICE_DB_NAME
             - name: POSTGRES_USER
-              value: "order_user"
+              valueFrom:
+                secretKeyRef:
+                  name: app-secrets
+                  key: ORDER_SERVICE_DB_USER
             - name: POSTGRES_PASSWORD
               valueFrom:
                 secretKeyRef:
@@ -172,7 +177,6 @@ spec:
     app: postgres-keycloak
   ports:
     - port: 5432
-
 ---
 apiVersion: apps/v1
 kind: Deployment
@@ -206,7 +210,6 @@ spec:
     app: redis-user
   ports:
     - port: 6379
-
 ---
 apiVersion: apps/v1
 kind: StatefulSet
@@ -257,7 +260,6 @@ spec:
     app: payment-mongo
   ports:
     - port: 27017
-
 ---
 apiVersion: apps/v1
 kind: StatefulSet

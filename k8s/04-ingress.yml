@@ -3,6 +3,8 @@ kind: Ingress
 metadata:
   name: microservices-ingress
   namespace: microservices
+  annotations:
+    nginx.ingress.kubernetes.io/rewrite-target: /
 spec:
   rules:
     - host: microservices.local
