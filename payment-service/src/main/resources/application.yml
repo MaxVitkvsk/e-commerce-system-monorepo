@@ -4,11 +4,8 @@ server:
 spring:
   application:
     name: payment-service
-  data:
-    mongodb:
-      host: ${DB_HOST}
-      port: ${DB_PORT}
-      database: ${DB_NAME}
+  mongodb:
+    uri: mongodb://${DB_HOST}:${DB_PORT}/${DB_NAME}
   kafka:
     bootstrap-servers: ${KAFKA_BOOTSTRAP_SERVERS}
     producer:

@@ -5,7 +5,7 @@ spring:
   application:
     name: order-service
   profiles:
-    active: ${SPRING_PROFILES_ACTIVE:local}
+    active: ${SPRING_PROFILES_ACTIVE:default}
   datasource:
     url: jdbc:postgresql://${DB_HOST:localhost}:${DB_PORT:5438}/${DB_NAME:order_db}
     username: ${DB_USER:order_user}
@@ -30,13 +30,13 @@ spring:
       value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
       properties:
         spring.json.use.type.headers: false
-        spring.json.value.default.type: com.vitkvsk.order_service.dto.event.Paymen
+        spring.json.value.default.type: com.vitkvsk.order_service.dto.event.PaymentCreatedEvent
 
 app:
   internal-secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
   user-service-url: ${USER_SERVICE_URL:http://localhost:8080}
   kafka:
-    topic: ${PAYMENT_EVENTS_TOPIC:payment-events
+    topic: ${PAYMENT_EVENTS_TOPIC:payment-events}
 
 resilience4j:
   circuitbreaker:

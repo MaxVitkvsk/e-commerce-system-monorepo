@@ -61,3 +61,4 @@ public class FallbackController {
                         "message", "Payment service is temporarily unavailable, retry later",
                         "path", exchange.getRequest().getPath().value())));
     }
+}
