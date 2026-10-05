@@ -19,6 +19,9 @@
 # Mobile Tools for Java (J2ME)
 .mtj.tmp/
 
+#k8s
+./k8s/01-secrets-and-configs.yml
+
 # Package Files #
 *.jar
 *.war
