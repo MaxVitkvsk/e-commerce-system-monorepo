@@ -12,6 +12,7 @@ import io.mongock.api.annotations.RollbackExecution;
 import org.bson.Document;
 import org.springframework.data.mongodb.core.MongoTemplate;
 
+import java.util.ArrayList;
 import java.util.List;
 
 
@@ -36,25 +37,31 @@ public class PaymentsCollectionChange {
     public void execution() {
         MongoDatabase db = mongoTemplate.getDb();
 
-        ValidationOptions validator = new ValidationOptions()
-                .validator(new Document("$jsonSchema", new Document()
-                        .append(BSON_TYPE, "object")
-                        .append("required", List.of(
-                                ORDER_ID_FIELD, USER_ID_FIELD, STATUS_FIELD, TIMESTAMP_FIELD, PAYMENT_AMOUNT_FIELD))
-                        .append("properties", new Document()
-                                .append(ORDER_ID_FIELD, new Document(BSON_TYPE, "long"))
-                                .append(USER_ID_FIELD, new Document(BSON_TYPE, "string"))
-                                .append(STATUS_FIELD, new Document(BSON_TYPE, "string"))
-                                .append(TIMESTAMP_FIELD, new Document(BSON_TYPE, "date"))
-                                .append(PAYMENT_AMOUNT_FIELD, new Document(BSON_TYPE, "decimal")))))
-                .validationLevel(ValidationLevel.STRICT)
-                .validationAction(ValidationAction.ERROR);
+        boolean collectionExists = db.listCollectionNames()
+                .into(new ArrayList<>())
+                .contains(COLLECTION_NAME);
 
-        db.createCollection(COLLECTION_NAME, new CreateCollectionOptions().validationOptions(validator));
+        if (!collectionExists) {
+            ValidationOptions validator = new ValidationOptions()
+                    .validator(new Document("$jsonSchema", new Document()
+                            .append(BSON_TYPE, "object")
+                            .append("required", List.of(
+                                    ORDER_ID_FIELD, USER_ID_FIELD, STATUS_FIELD, TIMESTAMP_FIELD, PAYMENT_AMOUNT_FIELD))
+                            .append("properties", new Document()
+                                    .append(ORDER_ID_FIELD, new Document(BSON_TYPE, "long"))
+                                    .append(USER_ID_FIELD, new Document(BSON_TYPE, "string"))
+                                    .append(STATUS_FIELD, new Document(BSON_TYPE, "string"))
+                                    .append(TIMESTAMP_FIELD, new Document(BSON_TYPE, "date"))
+                                    .append(PAYMENT_AMOUNT_FIELD, new Document(BSON_TYPE, "decimal")))))
+                    .validationLevel(ValidationLevel.STRICT)
+                    .validationAction(ValidationAction.ERROR);
+
+            db.createCollection(COLLECTION_NAME, new CreateCollectionOptions().validationOptions(validator));
+        }
 
         db.getCollection(COLLECTION_NAME).createIndex(
                 new Document(ORDER_ID_FIELD, 1),
-                new IndexOptions().name("idx_payments_order_id").unique(true));
+                new IndexOptions().name("idx_payments_order_id"));
 
         db.getCollection(COLLECTION_NAME).createIndex(
                 new Document(USER_ID_FIELD, 1).append(TIMESTAMP_FIELD, -1),

@@ -5,17 +5,18 @@ import com.vitkvsk.auth_service.config.RetryConfig;
 import com.vitkvsk.auth_service.exception.AuthException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpEntity;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
-import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.Map;
 
@@ -24,13 +25,26 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class KeycloakTokenClient {
 
-    private final RestTemplate restTemplate;
+    private static final ParameterizedTypeReference<Map<String, Object>> MAP_TYPE =
+            new ParameterizedTypeReference<>() {};
+
+    private final RestClient restClient;
     private final KeycloakProperties keycloakProperties;
 
     private Map<String, Object> postForm(String url, MultiValueMap<String, String> form) {
+        return postForm(url, form, null);
+    }
+
+    private Map<String, Object> postForm(String url, MultiValueMap<String, String> form, String basicAuth) {
         try {
-            return restTemplate.postForObject(url, new HttpEntity<>(form, formHeaders()), Map.class);
-        } catch (HttpClientErrorException e) {
+            RestClient.RequestBodySpec spec = restClient.post()
+                    .uri(url)
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED);
+            if (basicAuth != null) {
+                spec = spec.header(HttpHeaders.AUTHORIZATION, "Basic " + basicAuth);
+            }
+            return spec.body(form).retrieve().body(MAP_TYPE);
+        } catch (RestClientResponseException e) {
             log.warn("Keycloak token endpoint rejected request: {} body={}", e.getStatusCode(), e.getResponseBodyAsString());
             throw AuthException.unauthorized("Invalid credentials or token");
         }
@@ -43,18 +57,12 @@ public class KeycloakTokenClient {
         return form;
     }
 
-    private HttpHeaders formHeaders() {
-        HttpHeaders headers = new HttpHeaders();
-        headers.setContentType(MediaType.APPLICATION_FORM_URLENCODED);
-        return headers;
-    }
-
     private String oidc(String path) {
         return keycloakProperties.getUrl() + "/realms/" + keycloakProperties.getRealm()
                 + "/protocol/openid-connect/" + path;
     }
 
-    @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
+    @Retryable(includes = {ResourceAccessException.class, RestClientResponseException.class},
             maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
             multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
     public Map<String, Object> passwordGrant(String username, String password) {
@@ -65,7 +73,7 @@ public class KeycloakTokenClient {
         return postForm(oidc("token"), form);
     }
 
-    @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
+    @Retryable(includes = {ResourceAccessException.class, RestClientResponseException.class},
             maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
             multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
     public Map<String, Object> refreshGrant(String refreshToken) {
@@ -79,12 +87,17 @@ public class KeycloakTokenClient {
             maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
             multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
     public Map<?, ?> introspect(String token) {
-        HttpHeaders headers = formHeaders();
-        headers.setBasicAuth(keycloakProperties.getClientId(), keycloakProperties.getClientSecret());
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("token", token);
         try {
-            return restTemplate.postForObject(oidc("token/introspect"), new HttpEntity<>(form, headers), Map.class);
+            return restClient.post()
+                    .uri(oidc("token/introspect"))
+                    .contentType(MediaType.APPLICATION_FORM_URLENCODED)
+                    .headers(h -> h.setBasicAuth(
+                            keycloakProperties.getClientId(), keycloakProperties.getClientSecret()))
+                    .body(form)
+                    .retrieve()
+                    .body(MAP_TYPE);
         } catch (HttpClientErrorException e) {
             log.warn("Introspect rejected: {} body={}", e.getStatusCode(), e.getResponseBodyAsString());
             throw e;

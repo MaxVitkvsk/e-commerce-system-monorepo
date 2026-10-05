@@ -46,6 +46,10 @@ spec:
               value: "true"
             - name: KC_HTTP_ENABLED
               value: "true"
+            - name: KC_PROXY_HEADERS
+              value: "xforwarded"
+            - name: KC_HTTP_MANAGEMENT_RELATIVE_PATH
+              value: "/realms/issuer"
           ports:
             - name: http
               containerPort: 8080
@@ -133,7 +137,7 @@ spec:
             - name: REDIS_PORT
               value: "6379"
             - name: KEYCLOAK_ISSUER_URI
-              value: "http://keycloak:8080/realms/microservices-realm"
+              value: "http://keycloak.local/realms/issuer/realms/microservices-realm"
             - name: INTERNAL_SERVICE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -496,7 +500,7 @@ spec:
             - name: PAYMENT_SERVICE_URL
               value: "http://payment-service:8083"
             - name: KEYCLOAK_ISSUER_URI
-              value: "http://keycloak:8080/realms/microservices-realm"
+              value: "http://keycloak.local/realms/issuer/realms/microservices-realm"
             - name: REDIS_HOST
               value: "redis-user"
             - name: REDIS_PORT

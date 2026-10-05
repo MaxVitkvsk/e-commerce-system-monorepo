@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.keycloak.admin.client.Keycloak;
 import org.keycloak.admin.client.resource.RealmResource;
 import org.keycloak.representations.idm.*;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.event.EventListener;
 import org.springframework.stereotype.Component;
@@ -20,6 +21,21 @@ public class KeycloakRealmInitializer {
 
     private final Keycloak keycloak;
     private final KeycloakProperties p;
+
+    @EventListener(ApplicationReadyEvent.class)
+    public void init() {
+        ensureRealm();
+        RealmResource realm = keycloak.realm(p.getRealm());
+        ensureRole(realm, Roles.ADMIN);
+        ensureRole(realm, Roles.USER);
+        ensureClient(realm);
+        if (p.isResetAdminPassword()) {
+            ensureAdminUser(realm);
+        } else {
+            log.info("Admin user password reset disabled (keycloak.reset-admin-password=false)");
+        }
+        log.info("Keycloak realm '{}' initialized", p.getRealm());
+    }
 
     private void ensureRealm() {
         try { keycloak.realm(p.getRealm()).toRepresentation(); }
@@ -88,8 +104,7 @@ public class KeycloakRealmInitializer {
             existing.setLastName("Administrator");
             existing.setRequiredActions(Collections.emptyList());
             realm.users().get(id).update(existing);
-            realm.users().get(id).resetPassword(passwordCredential(p.getAppAdminPassword()));
-            log.info("Admin user '{}' synchronized (profile + password)", username);
+            log.info("Admin user '{}' synchronized (profile)", username);
         } else {
             id = createAdmin(realm, username);
         }
@@ -122,16 +137,5 @@ public class KeycloakRealmInitializer {
         cred.setValue(value);
         cred.setTemporary(false);
         return cred;
-    }
-
-    @EventListener(ApplicationReadyEvent.class)
-    public void init() {
-        ensureRealm();
-        RealmResource realm = keycloak.realm(p.getRealm());
-        ensureRole(realm, Roles.ADMIN);
-        ensureRole(realm, Roles.USER);
-        ensureClient(realm);
-        ensureAdminUser(realm);
-        log.info("Keycloak realm '{}' initialized", p.getRealm());
     }
 }

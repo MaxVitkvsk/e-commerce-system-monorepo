@@ -5,16 +5,12 @@ import com.vitkvsk.auth_service.dto.RegisterRequest;
 import com.vitkvsk.auth_service.exception.AuthException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.http.HttpEntity;
-import org.springframework.http.HttpHeaders;
-import org.springframework.http.HttpMethod;
 import org.springframework.http.MediaType;
 import org.springframework.resilience.annotation.Retryable;
 import org.springframework.stereotype.Component;
-import org.springframework.web.client.HttpClientErrorException;
-import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
-import org.springframework.web.client.RestTemplate;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 
 import java.util.Map;
 import java.util.UUID;
@@ -25,19 +21,15 @@ public class UserServiceClient {
 
     private static final String INTERNAL_TOKEN_HEADER = "X-Internal-Service-Token";
 
-    private final RestTemplate rest;
+    private final RestClient restClient;
 
     @Value("${app.user-service-url}") private String userServiceUrl;
     @Value("${app.internal-secret}")  private String internalSecret;
 
-    @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
+    @Retryable(includes = {ResourceAccessException.class, RestClientResponseException.class},
             maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
             multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
     public void createProfile(String keycloakId, RegisterRequest req) {
-        HttpHeaders h = new HttpHeaders();
-        h.setContentType(MediaType.APPLICATION_JSON);
-        h.set(INTERNAL_TOKEN_HEADER, internalSecret);
-
         Map<String, Object> profile = Map.of(
                 "name", req.name(),
                 "surname", req.surname(),
@@ -46,19 +38,26 @@ public class UserServiceClient {
         Map<String, Object> body = Map.of("id", keycloakId, "user", profile);
 
         try {
-            rest.postForEntity(userServiceUrl + "/api/users/internal", new HttpEntity<>(body, h), Void.class);
-        } catch (HttpClientErrorException e) {
+            restClient.post()
+                    .uri(userServiceUrl + "/api/users/internal")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header(INTERNAL_TOKEN_HEADER, internalSecret)
+                    .body(body)
+                    .retrieve()
+                    .toBodilessEntity();
+        } catch (RestClientResponseException e) {
             throw AuthException.badRequest("Profile creation rejected: " + e.getStatusCode());
         }
     }
 
-    @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
+    @Retryable(includes = {ResourceAccessException.class, RestClientResponseException.class},
             maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
             multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
     public void deleteProfile(UUID userId) {
-        HttpHeaders headers = new HttpHeaders();
-        headers.set(INTERNAL_TOKEN_HEADER, internalSecret);
-        rest.exchange(userServiceUrl + "/api/users/internal/" + userId,
-                HttpMethod.DELETE, new HttpEntity<>(headers), Void.class);
+        restClient.delete()
+                .uri(userServiceUrl + "/api/users/internal/" + userId)
+                .header(INTERNAL_TOKEN_HEADER, internalSecret)
+                .retrieve()
+                .toBodilessEntity();
     }
 }

@@ -19,4 +19,6 @@ public class KeycloakProperties {
             adminPassword,
             appAdminUsername,
             appAdminPassword;
+
+    private boolean resetAdminPassword = false;
 }

@@ -1,4 +1,4 @@
-package com.vitkvsk.order_service.conntroller;
+package com.vitkvsk.order_service.controller;
 
 import com.vitkvsk.order_service.dto.*;
 import com.vitkvsk.order_service.entity.OrderStatus;

@@ -21,6 +21,7 @@ keycloak:
   admin-password: ${KEYCLOAK_ADMIN_PASSWORD:kcadmin-pass}
   app-admin-username: ${APP_ADMIN_USERNAME:admin}
   app-admin-password: ${APP_ADMIN_PASSWORD:admin123}
+  reset-admin-password: ${KEYCLOAK_RESET_ADMIN_PASSWORD:false}
 
 app:
   user-service-url: ${USER_SERVICE_URL:http://localhost:8080}
