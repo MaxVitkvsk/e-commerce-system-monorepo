@@ -18,7 +18,8 @@ public class GatewaySecurityConfig {
                 .authorizeExchange(ex -> ex
                         .pathMatchers("/api/auth/register", "/api/auth/login").permitAll()
                         .pathMatchers("/api/auth/refresh").permitAll()
-                        .pathMatchers("/actuator/health/**").permitAll()
+                        .pathMatchers("/actuator/health", "/actuator/health/**").permitAll()
+                        .pathMatchers("/fallback/**").permitAll()
                         .pathMatchers("/api/*/internal/**").denyAll()
                         .anyExchange().authenticated())
                 .oauth2ResourceServer(oauth2 -> oauth2
