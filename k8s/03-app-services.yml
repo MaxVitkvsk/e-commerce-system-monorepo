@@ -137,7 +137,7 @@ spec:
             - name: REDIS_PORT
               value: "6379"
             - name: KEYCLOAK_ISSUER_URI
-              value: "http://keycloak.local/realms/issuer/realms/microservices-realm"
+              value: "http://keycloak.local/realms/microservices-realm"
             - name: INTERNAL_SERVICE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -502,7 +502,7 @@ spec:
             - name: PAYMENT_SERVICE_URL
               value: "http://payment-service:8083"
             - name: KEYCLOAK_ISSUER_URI
-              value: "http://keycloak.local/realms/issuer/realms/microservices-realm"
+              value: "http://keycloak.local/realms/microservices-realm"
             - name: REDIS_HOST
               value: "redis-user"
             - name: REDIS_PORT

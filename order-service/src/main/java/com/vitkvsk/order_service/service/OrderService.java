@@ -37,7 +37,8 @@ public class OrderService {
     private final OrderMapper orderMapper;
 
     private OrderItem buildItem(OrderItemCreateDto line) {
-        Item item = itemRepository.getReferenceById(line.itemId());
+        Item item = itemRepository.findById(line.itemId())
+                .orElseThrow(() -> new ResourceNotFoundException("Item " + line.itemId()));
         return OrderItem.builder().item(item).quantity(line.quantity()).build();
     }
 
@@ -52,8 +53,13 @@ public class OrderService {
                 orders.stream().map(Order::getUserId).distinct().toList());
     }
 
+    private UserInfoDto getUserInfo(UUID userId) {
+        UserInfoDto user = userServiceClient.getUserInfo(userId);
+        return user != null ? user : new UserInfoDto(userId, null, null, null);
+    }
+
     private OrderResponseDto toDto(Order order) {
-        return orderMapper.toResponseDto(order, userServiceClient.getUserInfo(order.getUserId()));
+        return orderMapper.toResponseDto(order, getUserInfo(order.getUserId()));
     }
 
     @Transactional
