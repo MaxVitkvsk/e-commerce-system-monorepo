@@ -1,14 +1,13 @@
 package com.vitkvsk.auth_service.client;
 
 import com.vitkvsk.auth_service.config.KeycloakProperties;
-import com.vitkvsk.auth_service.config.RetryConfig;
 import com.vitkvsk.auth_service.exception.AuthException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
-import org.springframework.resilience.annotation.Retryable;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.stereotype.Component;
 import org.springframework.util.LinkedMultiValueMap;
 import org.springframework.util.MultiValueMap;
@@ -62,9 +61,7 @@ public class KeycloakTokenClient {
                 + "/protocol/openid-connect/" + path;
     }
 
-    @Retryable(includes = {ResourceAccessException.class, RestClientResponseException.class},
-            maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
-            multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
+    @Retry(name = "remote")
     public Map<String, Object> passwordGrant(String username, String password) {
         MultiValueMap<String, String> form = clientForm();
         form.add("grant_type", "password");
@@ -73,9 +70,7 @@ public class KeycloakTokenClient {
         return postForm(oidc("token"), form);
     }
 
-    @Retryable(includes = {ResourceAccessException.class, RestClientResponseException.class},
-            maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
-            multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
+    @Retry(name = "remote")
     public Map<String, Object> refreshGrant(String refreshToken) {
         MultiValueMap<String, String> form = clientForm();
         form.add("grant_type", "refresh_token");
@@ -83,9 +78,7 @@ public class KeycloakTokenClient {
         return postForm(oidc("token"), form);
     }
 
-    @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
-            maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
-            multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
+    @Retry(name = "remote")
     public Map<?, ?> introspect(String token) {
         MultiValueMap<String, String> form = new LinkedMultiValueMap<>();
         form.add("token", token);

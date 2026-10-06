@@ -87,7 +87,7 @@ class OrderServiceTest {
                 testUserId, new BigDecimal("20.00"),
                 List.of(new OrderItemCreateDto(1L, 2)));
 
-        when(itemRepository.getReferenceById(1L)).thenReturn(testItem);
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
         when(userServiceClient.getUserInfo(testUserId)).thenReturn(testUserInfo);
 
@@ -97,7 +97,7 @@ class OrderServiceTest {
         assertThat(result.userId()).isEqualTo(testUserId);
         assertThat(result.status()).isEqualTo(OrderStatus.NEW);
         verify(orderRepository).save(any(Order.class));
-        verify(itemRepository).getReferenceById(1L);
+        verify(itemRepository).findById(1L);
     }
 
     @Test
@@ -191,7 +191,7 @@ class OrderServiceTest {
         OrderUpdateDto dto = new OrderUpdateDto(null, List.of(new OrderItemCreateDto(1L, 5)));
 
         when(orderRepository.findWithItemsById(1L)).thenReturn(Optional.of(testOrder));
-        when(itemRepository.getReferenceById(1L)).thenReturn(testItem);
+        when(itemRepository.findById(1L)).thenReturn(Optional.of(testItem));
         when(orderRepository.save(any(Order.class))).thenReturn(testOrder);
         when(userServiceClient.getUserInfo(testUserId)).thenReturn(testUserInfo);
 
@@ -199,7 +199,7 @@ class OrderServiceTest {
 
         assertThat(result.items()).hasSize(1);
         assertThat(result.items().get(0).quantity()).isEqualTo(5);
-        verify(itemRepository).getReferenceById(1L);
+        verify(itemRepository).findById(1L);
     }
 
     @Test

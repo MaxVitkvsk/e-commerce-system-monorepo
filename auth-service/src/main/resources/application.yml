@@ -27,6 +27,24 @@ app:
   user-service-url: ${USER_SERVICE_URL:http://localhost:8080}
   internal-secret: ${INTERNAL_SERVICE_SECRET:dev-internal-secret}
 
+resilience4j:
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        enableRandomizedWait: true
+        randomizedWaitFactor: 0.5
+        retryExceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+          - org.springframework.web.client.RestClientResponseException
+    instances:
+      remote:
+        baseConfig: default
+
 management:
   endpoints:
     web:

@@ -5,7 +5,7 @@ import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.core.ParameterizedTypeReference;
-import org.springframework.resilience.annotation.Retryable;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
@@ -29,8 +29,7 @@ public class UserServiceClient {
     private final RestClient restClient;
 
     @CircuitBreaker(name = "userService", fallbackMethod = "getUserInfoFallback")
-    @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
-            maxRetries = 2, delay = 500, multiplier = 2.0, jitter = 250)
+    @Retry(name = "remote")
     public UserInfoDto getUserInfo(UUID userId) {
         return restClient.get()
                 .uri("/api/users/internal/{id}", userId)
@@ -39,8 +38,7 @@ public class UserServiceClient {
     }
 
     @CircuitBreaker(name = "userService", fallbackMethod = "getUsersFallback")
-    @Retryable(includes = {ResourceAccessException.class, HttpServerErrorException.class},
-            maxRetries = 2, delay = 500, multiplier = 2.0, jitter = 250)
+    @Retry(name = "remote")
     public Map<UUID, UserInfoDto> getUsersByIds(Collection<UUID> ids) {
         String joined = ids.stream().map(UUID::toString).collect(Collectors.joining(","));
         List<UserInfoDto> list = restClient.get()

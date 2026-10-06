@@ -1,12 +1,11 @@
 package com.vitkvsk.auth_service.client;
 
-import com.vitkvsk.auth_service.config.RetryConfig;
 import com.vitkvsk.auth_service.dto.RegisterRequest;
 import com.vitkvsk.auth_service.exception.AuthException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
-import org.springframework.resilience.annotation.Retryable;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -26,9 +25,7 @@ public class UserServiceClient {
     @Value("${app.user-service-url}") private String userServiceUrl;
     @Value("${app.internal-secret}")  private String internalSecret;
 
-    @Retryable(includes = {ResourceAccessException.class, RestClientResponseException.class},
-            maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
-            multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
+    @Retry(name = "remote")
     public void createProfile(String keycloakId, RegisterRequest req) {
         Map<String, Object> profile = Map.of(
                 "name", req.name(),
@@ -50,9 +47,7 @@ public class UserServiceClient {
         }
     }
 
-    @Retryable(includes = {ResourceAccessException.class, RestClientResponseException.class},
-            maxRetries = RetryConfig.MAX_RETRIES, delay = RetryConfig.DELAY_MS,
-            multiplier = RetryConfig.MULTIPLIER, jitter = RetryConfig.JITTER_MS)
+    @Retry(name = "remote")
     public void deleteProfile(UUID userId) {
         restClient.delete()
                 .uri(userServiceUrl + "/api/users/internal/" + userId)

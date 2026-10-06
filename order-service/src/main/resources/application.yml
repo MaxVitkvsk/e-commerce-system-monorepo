@@ -39,6 +39,22 @@ app:
     topic: ${PAYMENT_EVENTS_TOPIC:payment-events}
 
 resilience4j:
+  retry:
+    configs:
+      default:
+        maxAttempts: 3
+        waitDuration: 500ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
+        enableRandomizedWait: true
+        randomizedWaitFactor: 0.5
+        retryExceptions:
+          - org.springframework.web.client.ResourceAccessException
+          - org.springframework.web.client.HttpServerErrorException
+          - org.springframework.web.client.RestClientResponseException
+    instances:
+      remote:
+        baseConfig: default
   circuitbreaker:
     instances:
       userService:

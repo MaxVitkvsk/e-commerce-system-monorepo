@@ -3,7 +3,7 @@ package com.vitkvsk.payment_service.client;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 
-import org.springframework.resilience.annotation.Retryable;
+import io.github.resilience4j.retry.annotation.Retry;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
@@ -16,17 +16,7 @@ public class RandomNumberClient {
 
     private final RestClient randomRestClient;
 
-    @Retryable(
-            includes = {
-                    RestClientResponseException.class,
-                    ResourceAccessException.class
-            },
-            maxRetriesString = "${app.retry.max-attempts:3}",
-            delayString = "${app.retry.delay-ms:500}",
-            multiplierString = "${app.retry.multiplier:2.0}",
-            jitterString = "${app.retry.jitter-ms:100}",
-            maxDelayString = "${app.retry.max-delay-ms:10000}"
-    )
+    @Retry(name = "remote")
     public int getRandomNumber() {
         String body = randomRestClient
                 .get()
