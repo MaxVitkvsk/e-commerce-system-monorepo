@@ -48,8 +48,6 @@ spec:
               value: "true"
             - name: KC_PROXY_HEADERS
               value: "xforwarded"
-            - name: KC_HTTP_MANAGEMENT_RELATIVE_PATH
-              value: "/realms/issuer"
           ports:
             - name: http
               containerPort: 8080
@@ -103,7 +101,7 @@ spec:
     spec:
       containers:
         - name: user-service
-          image: myapp/user-service:v4
+          image: myapp/user-service:v6
           imagePullPolicy: IfNotPresent
           env:
             - name: SPRING_PROFILES_ACTIVE
@@ -137,7 +135,7 @@ spec:
             - name: REDIS_PORT
               value: "6379"
             - name: KEYCLOAK_ISSUER_URI
-              value: "http://keycloak.local/realms/microservices-realm"
+              value: "http://keycloak:8080/realms/microservices-realm"
             - name: INTERNAL_SERVICE_SECRET
               valueFrom:
                 secretKeyRef:
@@ -194,7 +192,7 @@ spec:
           command: ["sh", "-c", "until wget -q -O /dev/null http://keycloak:9000/health/ready; do echo waiting for keycloak; sleep 2; done"]
       containers:
         - name: auth-service
-          image: myapp/auth-service:v4
+          image: myapp/auth-service:v6
           imagePullPolicy: IfNotPresent
           env:
             - name: SERVER_PORT
@@ -314,7 +312,7 @@ spec:
     spec:
       containers:
         - name: order-service
-          image: myapp/order-service:v4
+          image: myapp/order-service:v6
           imagePullPolicy: IfNotPresent
           env:
             - name: SERVER_PORT
@@ -409,7 +407,7 @@ spec:
           command: ["sh", "-c", "until nc -z payment-mongo 27017; do echo waiting for mongo; sleep 2; done"]
       containers:
         - name: payment-service
-          image: myapp/payment-service:v4
+          image: myapp/payment-service:v6
           imagePullPolicy: IfNotPresent
           env:
             - name: SERVER_PORT
@@ -488,7 +486,7 @@ spec:
     spec:
       containers:
         - name: gateway-service
-          image: myapp/gateway-service:v4
+          image: myapp/gateway-service:v6
           imagePullPolicy: IfNotPresent
           env:
             - name: SERVER_PORT
@@ -502,7 +500,7 @@ spec:
             - name: PAYMENT_SERVICE_URL
               value: "http://payment-service:8083"
             - name: KEYCLOAK_ISSUER_URI
-              value: "http://keycloak.local/realms/microservices-realm"
+              value: "http://keycloak:8080/realms/microservices-realm"
             - name: REDIS_HOST
               value: "redis-user"
             - name: REDIS_PORT

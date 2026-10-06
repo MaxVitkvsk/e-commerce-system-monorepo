@@ -4,7 +4,7 @@ metadata:
   name: microservices-ingress
   namespace: microservices
   annotations:
-    nginx.ingress.kubernetes.io/rewrite-target: /
+    nginx.ingress.kubernetes.io/ssl-redirect: "false"
 spec:
   rules:
     - host: microservices.local
