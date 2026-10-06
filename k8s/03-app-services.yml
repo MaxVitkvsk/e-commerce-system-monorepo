@@ -351,6 +351,8 @@ spec:
                 configMapKeyRef:
                   name: app-config
                   key: PAYMENT_EVENTS_TOPIC
+            - name: USER_SERVICE_URL
+              value: "http://user-service:8080"
             - name: INTERNAL_SERVICE_SECRET
               valueFrom:
                 secretKeyRef:
